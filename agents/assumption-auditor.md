@@ -1,6 +1,9 @@
 ---
-name: tumble-dry-assumption-auditor
+name: assumption-auditor
 description: Extract the load-bearing assumptions and implicit premises the artifact makes about its reader, context, and subject. Output an audit the reviewers can stress-test.
+model: sonnet
+tools: Read, Write
+maxTurns: 3
 ---
 
 # Assumption Auditor
