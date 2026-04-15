@@ -6,6 +6,43 @@ Works on docs, copy, ads, blogs, markdown decks, financial models, pitch decks, 
 
 ---
 
+## Two control planes
+
+Tumble-dry runs the same convergence loop two ways. Both share the same
+data plane (`bin/tumble-dry.cjs` subcommands) and produce the same
+`.tumble-dry/<slug>/` layout, `FINAL.md`, and `polish-log.md`.
+
+### 1. Claude Code-native (preferred)
+
+```
+/tumble-dry <artifact>
+```
+
+- Inherits your active Claude Code session auth — **no `ANTHROPIC_API_KEY` required**.
+- Each agent (audience-inferrer, assumption-auditor, reviewer × N, editor) is
+  dispatched as a parallel `Task` subagent in a single assistant turn.
+- **Trace-fidelity caveat:** subagent request/response payloads are isolated
+  by Claude Code and NOT visible to the orchestrator. CC-path traces record
+  brief path, critique path, wall-clock timing, and exit status only —
+  not the per-dispatch extended-thinking transcript. If you need full
+  reasoning traces (CORE-04), use the headless path below.
+
+### 2. Headless CLI (fallback for CI / scripting)
+
+```
+node bin/tumble-dry-loop.cjs <artifact> [--panel-size N] [--no-auto-redraft]
+```
+
+- Requires `ANTHROPIC_API_KEY` (env var or `~/.anthropic/api_key`).
+- Writes full per-dispatch traces (request + response + extended thinking)
+  to `.tumble-dry/<slug>/round-N/traces/` per CORE-04.
+- Use this for CI runs, scripted batch polishing, or any environment
+  without an interactive Claude Code session.
+
+See `bin/tumble-dry-loop.cjs --help` for the headless flag reference.
+
+---
+
 ## Quickstart
 
 ```bash
