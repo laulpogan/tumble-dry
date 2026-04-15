@@ -85,16 +85,49 @@
 
 ## Traceability
 
-(Filled by `/gsd-roadmapper` after roadmap creation. Each requirement → exactly one phase.)
+Each Active requirement maps to exactly one phase. Coverage: 38/38.
 
-| REQ-ID | Phase |
-|--------|-------|
-| DISPATCH-01..08 | TBD |
-| PERSONA-01..06 | TBD |
-| FORMAT-01..07 | TBD |
-| CODE-01..06 | TBD |
-| QOL-01..03 | TBD |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| DISPATCH-01 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-02 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-03 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-04 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-05 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-06 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-07 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-08 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| PERSONA-01 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-02 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-03 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-04 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-05 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-06 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| HARDEN-01 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-02 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-03 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-04 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-05 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-06 | Phase 3 — CORE-HARDEN | Pending |
+| FORMAT-01 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-01a | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-02 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-03 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-04 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-05 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-06 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-07 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| CODE-01 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-02 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-03 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-04 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-05 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-06 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-07 | Phase 5 — CODE (v0.6.0) | Pending |
+| QOL-01 | Phase 6 — RELEASE / QOL | Pending |
+| QOL-02 | Phase 6 — RELEASE / QOL | Pending |
+| QOL-03 | Phase 6 — RELEASE / QOL | Pending |
 
 ---
 
-*Defined: 2026-04-15 during v0.5.x milestone init.*
+*Defined: 2026-04-15 during v0.5.x milestone init. Traceability filled by /gsd-roadmapper 2026-04-15.*
