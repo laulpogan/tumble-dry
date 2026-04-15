@@ -249,6 +249,7 @@ switch (cmd) {
         voiceExcerpts: getVoiceExcerpts(cfg.voice_refs, artifactPath, 4).excerpts,
         roundNumber: round,
         reviewerAgentPath,
+        runDir, // HARDEN-04: auto-loads prior round's unresolved material
       });
       const outPath = path.join(rDir, `brief-reviewer-${p.slug}.md`);
       fs.writeFileSync(outPath, brief, 'utf-8');
