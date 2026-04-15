@@ -95,6 +95,32 @@ claude plugin marketplace add github:SlanchaAi/skills
 claude plugin install tumble-dry@slanchaai
 ```
 
+## Office formats
+
+Tumble-dry polishes `.md` / `.markdown` / `.txt` natively. Office formats (`.docx`, `.pptx`, `.xlsx`, `.pdf`) are supported via optional dependencies and a markdown-projection pipeline:
+
+```bash
+cd ~/Source/tumble-dry
+npm install       # installs mammoth, turndown, officeparser, unpdf (optionalDependencies)
+```
+
+Markdown-only users can skip `npm install` entirely — the loader degrades gracefully and prints an actionable hint if it encounters an office format without its dependencies.
+
+| Extension            | Loader                                        | Boundary markers      |
+| -------------------- | --------------------------------------------- | --------------------- |
+| `.md` `.markdown` `.txt` | identity (no deps)                        | none                  |
+| `.docx`              | mammoth → HTML → turndown                     | headings preserved    |
+| `.pptx`              | officeparser                                  | `<!-- slide:N -->`    |
+| `.xlsx`              | officeparser                                  | `<!-- sheet:Name -->` |
+| `.pdf`               | officeparser primary, unpdf (ESM) fallback    | `<!-- page:N -->`     |
+| anything else        | pandoc fallback (if `pandoc` is on `$PATH`)   | pandoc-dependent      |
+
+**FINAL.md always ships as markdown.** Tumble-dry does not regenerate the source binary — the original `.docx` / `.pptx` / `.xlsx` / `.pdf` is preserved byte-for-byte at `.tumble-dry/<slug>/history/round-0-original.<ext>`, and a `ROUNDTRIP_WARNING.md` is emitted before round 1 reminding you to re-apply FINAL.md content manually. Automatic roundtrip to binary formats is explicitly out of scope through v0.6.
+
+All loaders return a typed result: `{ ok:true, markdown, format, warnings[] }` or `{ ok:false, reason, detail }` with `reason ∈ { encrypted, corrupt, unsupported, empty, too_large }`. The loader enforces a 20MB file-size gate and surfaces encrypted / password-protected files with an actionable error.
+
+Encoding invariants (FORMAT-07): UTF-8 default, BOM stripped on read, CJK / RTL / curly-quote / emoji preserved through the projection.
+
 ## How it works
 
 1. **Audience Inferrer** reads the artifact, proposes 3–6 specific personas (not "a reader" — *"CFO at a mid-market SaaS, 10+ years in finance, skeptical of AI hype after a failed pilot last year"*). Persona library by artifact type seeded into prompt.

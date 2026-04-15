@@ -30,14 +30,14 @@
 
 ### Office Format Ingestion (v0.5.2)
 
-- [ ] **FORMAT-01** `lib/loader.cjs` auto-detects file type by extension and dispatches to the appropriate converter. Supported on init: `.md`, `.markdown`, `.txt` (identity); `.docx` (`mammoth` → HTML → `turndown` → markdown); `.pptx` / `.xlsx` (`officeparser` unified AST); `.pdf` (`officeparser` primary, `unpdf` fallback — `unpdf` is ESM-only, loader uses dynamic `import()`). Pandoc fallback for everything else when present on PATH. **NOT used:** `xlsx` (SheetJS) — left npm 2023 with stale CVE; `pdf-parse` — abandoned. See `.planning/research/STACK.md` §What NOT to use.
-- [ ] **FORMAT-01a** Every loader returns the typed-result contract `{ok:true, markdown, format, warnings[]} | {ok:false, reason:'encrypted'|'corrupt'|'unsupported'|'empty'|'too_large', detail}`. Loader callers branch on `ok`, never throw.
-- [ ] **FORMAT-02** Loaders preserve structure in the markdown working copy with HTML-comment boundary markers the editor MUST preserve verbatim: slide N → `<!-- slide:N -->\n## Slide N — <title>`; sheet → `<!-- sheet:Name -->\n## Sheet: <name>` + markdown table; pdf page → `<!-- page:N -->\n## Page N`. Reviewers see structure; aggregator dedup uses markers as anchor.
-- [ ] **FORMAT-03** Source binary is preserved at `.tumble-dry/<slug>/history/round-0-original.<ext>` (byte-for-byte). working.md is the markdown projection.
-- [ ] **FORMAT-04** When source is non-markdown, `lib/loader.cjs` emits `.tumble-dry/<slug>/ROUNDTRIP_WARNING.md` BEFORE round 1 (not just at finalize) explaining "FINAL.md ships as markdown; manually re-apply to <source>". Slash command surfaces the warning to user.
-- [ ] **FORMAT-05** `package.json` is introduced; `mammoth`, `turndown`, `officeparser`, `unpdf` declared as `optionalDependencies` so the headless `bin/` path still works without `npm install` for users only polishing markdown.
-- [ ] **FORMAT-06** Loaders fail gracefully (return `{ok:false}`) with actionable messages on encrypted/password-protected files, oversized files (>20MB unless explicit override; loader forks to child process for >5MB to bound memory), unrecognized extensions.
-- [ ] **FORMAT-07** Encoding correctness — UTF-8 default, BOM stripped, CJK + RTL preserved through the loader → markdown projection. Test fixtures in `tests/fixtures/format/` (CJK docx, RTL pdf, curly-quote xlsx, emoji md).
+- [x] **FORMAT-01** `lib/loader.cjs` auto-detects file type by extension and dispatches to the appropriate converter. Supported on init: `.md`, `.markdown`, `.txt` (identity); `.docx` (`mammoth` → HTML → `turndown` → markdown); `.pptx` / `.xlsx` (`officeparser` unified AST); `.pdf` (`officeparser` primary, `unpdf` fallback — `unpdf` is ESM-only, loader uses dynamic `import()`). Pandoc fallback for everything else when present on PATH. **NOT used:** `xlsx` (SheetJS) — left npm 2023 with stale CVE; `pdf-parse` — abandoned. See `.planning/research/STACK.md` §What NOT to use.
+- [x] **FORMAT-01a** Every loader returns the typed-result contract `{ok:true, markdown, format, warnings[]} | {ok:false, reason:'encrypted'|'corrupt'|'unsupported'|'empty'|'too_large', detail}`. Loader callers branch on `ok`, never throw.
+- [x] **FORMAT-02** Loaders preserve structure in the markdown working copy with HTML-comment boundary markers the editor MUST preserve verbatim: slide N → `<!-- slide:N -->\n## Slide N — <title>`; sheet → `<!-- sheet:Name -->\n## Sheet: <name>` + markdown table; pdf page → `<!-- page:N -->\n## Page N`. Reviewers see structure; aggregator dedup uses markers as anchor.
+- [x] **FORMAT-03** Source binary is preserved at `.tumble-dry/<slug>/history/round-0-original.<ext>` (byte-for-byte). working.md is the markdown projection.
+- [x] **FORMAT-04** When source is non-markdown, `lib/loader.cjs` emits `.tumble-dry/<slug>/ROUNDTRIP_WARNING.md` BEFORE round 1 (not just at finalize) explaining "FINAL.md ships as markdown; manually re-apply to <source>". Slash command surfaces the warning to user.
+- [x] **FORMAT-05** `package.json` is introduced; `mammoth`, `turndown`, `officeparser`, `unpdf` declared as `optionalDependencies` so the headless `bin/` path still works without `npm install` for users only polishing markdown.
+- [x] **FORMAT-06** Loaders fail gracefully (return `{ok:false}`) with actionable messages on encrypted/password-protected files, oversized files (>20MB unless explicit override; loader forks to child process for >5MB to bound memory), unrecognized extensions.
+- [x] **FORMAT-07** Encoding correctness — UTF-8 default, BOM stripped, CJK + RTL preserved through the loader → markdown projection. Test fixtures in `tests/fixtures/format/` (CJK docx, RTL pdf, curly-quote xlsx, emoji md).
 
 ### Code Support (v0.6.0)
 
@@ -109,14 +109,14 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 | HARDEN-04 | Phase 3 — CORE-HARDEN | Complete |
 | HARDEN-05 | Phase 3 — CORE-HARDEN | Complete |
 | HARDEN-06 | Phase 3 — CORE-HARDEN | Complete |
-| FORMAT-01 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-01a | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-02 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-03 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-04 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-05 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-06 | Phase 4 — FORMAT (v0.5.2) | Pending |
-| FORMAT-07 | Phase 4 — FORMAT (v0.5.2) | Pending |
+| FORMAT-01 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-01a | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-02 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-03 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-04 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-05 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-06 | Phase 4 — FORMAT (v0.5.2) | Complete |
+| FORMAT-07 | Phase 4 — FORMAT (v0.5.2) | Complete |
 | CODE-01 | Phase 5 — CODE (v0.6.0) | Pending |
 | CODE-02 | Phase 5 — CODE (v0.6.0) | Pending |
 | CODE-03 | Phase 5 — CODE (v0.6.0) | Pending |
