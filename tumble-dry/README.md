@@ -67,18 +67,55 @@ export TUMBLE_DRY_MODEL_EDITOR=claude-opus-4-6             # just editor
 
 ```
 .tumble-dry/<artifact-slug>/
+  source.path                   # absolute path to original (read-only, never touched)
+  working.md                    # the live working copy (artifact.path points here)
+  artifact.path
+  history/
+    round-0-original.md         # byte-for-byte copy of source at init time
+    round-1-input.md            # working.md before editor pass
+    round-1-output.md           # working.md after editor pass
+    round-2-input.md            ...
   round-1/
     brief-audience.md           brief-auditor.md
     brief-reviewer-<persona>.md brief-editor.md
     audience.md                 assumption-audit.md
-    critique-<persona>.md       aggregate.md
+    critique-<persona>.md       aggregate.md   aggregate.json
     proposed-redraft.md         redraft-staged.md
     diff.md                     # drift report
+    traces/
+      <persona>.json            # full request + response per dispatch
+      editor.json
+      editor.thinking.md        # extended-thinking transcript (when enabled)
   round-2/
     ...
   FINAL.md                      # polished artifact
   polish-log.md                 # round-by-round summary
 ```
+
+## Non-destructive history
+
+Your source file is **never modified**. On `init`, tumble-dry copies it into `.tumble-dry/<slug>/working.md` and operates on that copy. The original location is recorded in `source.path` for provenance.
+
+Each round produces two history snapshots — `round-N-input.md` (state going into the editor) and `round-N-output.md` (state coming out) — so any version can be reconstructed without re-running the loop. `polish-log.md` includes the source path and a `cp FINAL.md <source>` hint if you want to apply the polished version.
+
+## Reasoning traces
+
+Every dispatch (audience inferrer, auditor, each reviewer, editor) writes a full trace to `round-N/traces/<role>.json`:
+
+- the exact request payload (model, system prompt, user blocks, thinking budget)
+- the response broken into typed content blocks (`text`, `thinking`)
+- token usage (input, output, cache read, cache creation)
+- start/finish timestamps + duration
+
+Extended thinking is enabled for the **editor** by default (4000-token budget — the editor is the synthesis step and benefits most from internal reasoning). Reviewers and the audit/audience agents default to no thinking to control cost on parallel calls. Override per role:
+
+```bash
+export TUMBLE_DRY_THINK_EDITOR=8000          # raise editor thinking budget
+export TUMBLE_DRY_THINK_REVIEWER=2000        # enable reviewer thinking
+export TUMBLE_DRY_THINK=0                    # disable thinking globally
+```
+
+Thinking transcripts are also dumped as `traces/<role>.thinking.md` for human reading.
 
 ## CLI reference
 
@@ -157,4 +194,4 @@ If the loop never converges, the structural alert is the answer: editor rewrites
 
 ## Status
 
-v0.3.0 — Persona libraries by artifact type, structural-vs-surface finding tags, persistence detection across rounds, scope guardrails. Built on v0.2.0 API-first loop.
+v0.4.0 — Non-destructive history (source preserved; per-round input/output snapshots) and per-dispatch reasoning traces (full request, response blocks, extended thinking). Built on v0.3.0's persona libraries + structural detection.

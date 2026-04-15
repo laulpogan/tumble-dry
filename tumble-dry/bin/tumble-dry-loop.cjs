@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { loadConfig } = require('../lib/config.cjs');
-const { initRun, roundDir: ensureRoundDir, currentRound } = require('../lib/run-state.cjs');
+const { initRun, roundDir: ensureRoundDir, currentRound, snapshotHistory } = require('../lib/run-state.cjs');
 const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggregator.cjs');
 const { dispatchWave, selectBackend } = require('../lib/dispatch.cjs');
 const { voiceDriftReport } = require('../lib/voice.cjs');
@@ -110,8 +110,12 @@ async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }
   const drift = JSON.parse(driftJson);
   log(`round ${roundN} — drift: score=${drift.drift_score} unchanged=${drift.counts.unchanged} modified=${drift.counts.modified} inserted=${drift.counts.inserted} deleted=${drift.counts.deleted}`);
 
-  log(`round ${roundN} — replacing artifact with redraft`);
-  fs.copyFileSync(stagedPath, artifactAbs);
+  // Non-destructive: snapshot the working copy state before+after the editor
+  // pass into history/. The source file (recorded in source.path) is never touched.
+  snapshotHistory(runDir, roundN, 'input', artifactAbs);
+  fs.copyFileSync(stagedPath, artifactAbs);  // overwrite working.md, NOT source
+  snapshotHistory(runDir, roundN, 'output', artifactAbs);
+  log(`round ${roundN} — working.md updated; history snapshots: round-${roundN}-input.md, round-${roundN}-output.md`);
 }
 
 async function main() {

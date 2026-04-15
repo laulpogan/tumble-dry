@@ -290,6 +290,8 @@ switch (cmd) {
     if (!slug) die('usage: finalize <slug>');
     const runDir = findRunDir(slug);
     const artifactPath = fs.readFileSync(path.join(runDir, 'artifact.path'), 'utf-8').trim();
+    const sourcePathFile = path.join(runDir, 'source.path');
+    const sourcePath = fs.existsSync(sourcePathFile) ? fs.readFileSync(sourcePathFile, 'utf-8').trim() : artifactPath;
     const finalPath = path.join(runDir, 'FINAL.md');
     fs.copyFileSync(artifactPath, finalPath);
     // Assemble polish log from round aggregates
@@ -297,7 +299,18 @@ switch (cmd) {
       .filter(n => /^round-\d+$/.test(n))
       .map(n => parseInt(n.replace('round-', ''), 10))
       .sort((a, b) => a - b);
-    const logLines = [`# Polish Log — ${slug}`, '', `**Artifact:** ${artifactPath}`, `**Total rounds:** ${rounds.length}`, ''];
+    const logLines = [
+      `# Polish Log — ${slug}`,
+      '',
+      `**Source (untouched):** ${sourcePath}`,
+      `**Working copy:** ${artifactPath}`,
+      `**Final polished:** ${finalPath}`,
+      `**History:** ${path.join(runDir, 'history')}/`,
+      `**Total rounds:** ${rounds.length}`,
+      '',
+      `> Source file is preserved byte-for-byte at \`${sourcePath}\`. To apply the polished version, run: \`cp ${finalPath} ${sourcePath}\``,
+      '',
+    ];
     for (const r of rounds) {
       const aggPath = path.join(runDir, `round-${r}`, 'aggregate.md');
       logLines.push(`## Round ${r}`);

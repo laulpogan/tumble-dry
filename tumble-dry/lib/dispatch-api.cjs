@@ -19,6 +19,24 @@ const QUALITY_MODEL = 'claude-opus-4-6';
 const MAX_TOKENS = 8192;
 const API_BASE = 'https://api.anthropic.com/v1/messages';
 
+// Extended thinking budget per role. Editor gets the deepest reasoning since
+// it's the synthesis step (one call per round, high-leverage). Reviewers and
+// the audit/audience agents default to 0 to keep cost down on N parallel calls.
+// Override per role via env: TUMBLE_DRY_THINK_<ROLE>=<budget_tokens> (0 disables).
+const THINKING_DEFAULTS = {
+  editor: 4000,
+  'audience-inferrer': 0,
+  'assumption-auditor': 0,
+  reviewer: 0,
+};
+
+function thinkingBudgetFor(role) {
+  const key = `TUMBLE_DRY_THINK_${(role || '').toUpperCase().replace(/-/g, '_')}`;
+  if (process.env[key] !== undefined) return parseInt(process.env[key], 10) || 0;
+  if (process.env.TUMBLE_DRY_THINK !== undefined) return parseInt(process.env.TUMBLE_DRY_THINK, 10) || 0;
+  return THINKING_DEFAULTS[role] || 0;
+}
+
 // Role → model. Reviewers on Sonnet (fast + cheap, quality adequate).
 // Audience Inferrer + Editor on Opus (quality-critical, runs once per wave).
 // Override via TUMBLE_DRY_MODEL (all roles) or per-role TUMBLE_DRY_MODEL_<ROLE>.
@@ -57,7 +75,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
  * Call the Anthropic messages API. Returns the response text.
  * Uses prompt caching via cache_control on the prefix block if provided.
  */
-async function callApiOnce({ system, userPrefix, userSuffix, cachedPrefix, model, maxTokens }) {
+async function callApiOnce({ system, userPrefix, userSuffix, cachedPrefix, model, maxTokens, thinkingBudget }) {
   const content = [];
   if (userPrefix) {
     const block = { type: 'text', text: userPrefix };
@@ -66,12 +84,22 @@ async function callApiOnce({ system, userPrefix, userSuffix, cachedPrefix, model
   }
   if (userSuffix) content.push({ type: 'text', text: userSuffix });
 
-  const body = JSON.stringify({
+  const requestPayload = {
     model,
     max_tokens: maxTokens,
     system,
     messages: [{ role: 'user', content }],
-  });
+  };
+  if (thinkingBudget && thinkingBudget > 0) {
+    // Extended thinking: model emits internal reasoning blocks before its answer.
+    // budget_tokens must be < max_tokens. Bump max_tokens if needed so the model
+    // still has room to actually answer after thinking.
+    requestPayload.thinking = { type: 'enabled', budget_tokens: thinkingBudget };
+    if (maxTokens <= thinkingBudget + 1024) {
+      requestPayload.max_tokens = thinkingBudget + 4096;
+    }
+  }
+  const body = JSON.stringify(requestPayload);
 
   return new Promise((resolve, reject) => {
     const req = https.request(API_BASE, {
@@ -90,8 +118,27 @@ async function callApiOnce({ system, userPrefix, userSuffix, cachedPrefix, model
         if (res.statusCode === 200) {
           try {
             const parsed = JSON.parse(chunks);
-            const text = (parsed.content || []).map(b => b.text).filter(Boolean).join('\n');
-            return resolve({ text, usage: parsed.usage || {}, status: 200 });
+            // Filter to text blocks only (was previously joining ALL block .text,
+            // which silently concatenated thinking output with the deliverable).
+            const blocks = parsed.content || [];
+            const text = blocks
+              .filter(b => b.type === 'text')
+              .map(b => b.text || '')
+              .filter(Boolean)
+              .join('\n');
+            const thinking = blocks
+              .filter(b => b.type === 'thinking')
+              .map(b => b.thinking || b.text || '')
+              .filter(Boolean)
+              .join('\n');
+            return resolve({
+              text,
+              thinking,
+              blocks,
+              usage: parsed.usage || {},
+              status: 200,
+              request: requestPayload,
+            });
           } catch (e) {
             return reject(new Error(`parse error: ${e.message}; body: ${chunks.slice(0, 200)}`));
           }
@@ -117,10 +164,11 @@ async function callApi(opts) {
   const model = opts.model || modelFor(opts.role);
   const maxTokens = opts.maxTokens || MAX_TOKENS;
   const cachedPrefix = opts.cachedPrefix !== false;
+  const thinkingBudget = opts.thinkingBudget !== undefined ? opts.thinkingBudget : thinkingBudgetFor(opts.role);
   let lastErr;
   for (let attempt = 0; attempt < 4; attempt++) {
     try {
-      return await callApiOnce({ ...opts, model, maxTokens, cachedPrefix });
+      return await callApiOnce({ ...opts, model, maxTokens, cachedPrefix, thinkingBudget });
     } catch (e) {
       lastErr = e;
       const retriable = e.status === 429 || e.status === 529 || (e.status >= 500 && e.status < 600) || /timeout|ECONN|ETIMEDOUT/i.test(e.message);
@@ -170,15 +218,54 @@ async function dispatchOne({ briefFile, roundDir, targetFilename, role }) {
   const briefText = fs.readFileSync(briefFile, 'utf-8');
   const { prefix, suffix } = splitBrief(briefText);
   const kind = roleKind(role);
-  const { text, usage } = await callApi({
+  const startedAt = new Date();
+  const result = await callApi({
     system: SYSTEM_PROMPT,
     userPrefix: prefix,
     userSuffix: suffix,
     role: kind,
   });
+  const finishedAt = new Date();
   const target = path.join(roundDir, targetFilename);
-  fs.writeFileSync(target, text, 'utf-8');
-  return { target, usage, model: modelFor(kind) };
+  fs.writeFileSync(target, result.text, 'utf-8');
+
+  // Persist a reasoning trace so any run can be reconstructed later: full
+  // request payload, separated content blocks, usage, timings. Lives next to
+  // the deliverable so reviewers/editors can be re-audited without re-running.
+  const tracesDir = path.join(roundDir, 'traces');
+  fs.mkdirSync(tracesDir, { recursive: true });
+  const traceName = (role || 'unknown').replace(/[^a-z0-9_-]/gi, '_');
+  const trace = {
+    role,
+    kind,
+    model: modelFor(kind),
+    started_at: startedAt.toISOString(),
+    finished_at: finishedAt.toISOString(),
+    duration_ms: finishedAt - startedAt,
+    request: result.request,
+    response: {
+      blocks: result.blocks,
+      text: result.text,
+      thinking: result.thinking,
+    },
+    usage: result.usage,
+    target_file: target,
+    brief_file: briefFile,
+  };
+  fs.writeFileSync(
+    path.join(tracesDir, `${traceName}.json`),
+    JSON.stringify(trace, null, 2),
+    'utf-8'
+  );
+  if (result.thinking) {
+    fs.writeFileSync(
+      path.join(tracesDir, `${traceName}.thinking.md`),
+      `# ${role} — extended thinking\n\nModel: ${trace.model}\nDuration: ${trace.duration_ms}ms\n\n---\n\n${result.thinking}\n`,
+      'utf-8'
+    );
+  }
+
+  return { target, usage: result.usage, model: modelFor(kind), trace_file: path.join(tracesDir, `${traceName}.json`) };
 }
 
 /**

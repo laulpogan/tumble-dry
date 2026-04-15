@@ -67,7 +67,7 @@ examples/        ← end-to-end runs on real artifacts
 
 ## Status
 
-v0.3.0 — Persona libraries by artifact type, structural-vs-surface finding tags, persistence detection across rounds, scope guardrails. Built on the v0.2.0 API-first convergence loop with prompt caching.
+v0.4.0 — Non-destructive: source files are never modified; per-round history snapshots + full reasoning traces (request, response, extended thinking) saved to `.tumble-dry/<slug>/`. Built on v0.3.0's persona libraries + structural-finding detection and v0.2.0's API-first convergence loop with prompt caching.
 
 ## License
 

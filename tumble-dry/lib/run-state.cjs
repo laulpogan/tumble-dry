@@ -11,11 +11,38 @@ function slugify(name) {
 }
 
 function initRun(cwd, artifactPath) {
-  const abs = path.resolve(cwd, artifactPath);
-  const slug = slugify(path.basename(abs));
+  // Non-destructive by default. The source file at `artifactPath` is treated
+  // as immutable. We copy it once into runDir/working.md and operate on that.
+  // - artifact.path points to working.md (so all CLI subcommands read it transparently)
+  // - source.path records the original location for provenance + final --apply
+  // - history/round-0-original.md preserves the untouched original byte-for-byte
+  const sourceAbs = path.resolve(cwd, artifactPath);
+  const slug = slugify(path.basename(sourceAbs));
   const runDir = path.join(cwd, '.tumble-dry', slug);
-  fs.mkdirSync(runDir, { recursive: true });
-  return { slug, runDir, artifactAbs: abs };
+  const historyDir = path.join(runDir, 'history');
+  fs.mkdirSync(historyDir, { recursive: true });
+
+  const workingPath = path.join(runDir, 'working.md');
+  const originalSnapshot = path.join(historyDir, 'round-0-original.md');
+
+  // Only copy on fresh init. If a working copy already exists, leave it
+  // (resume case — we're continuing a prior run).
+  if (!fs.existsSync(workingPath)) {
+    fs.copyFileSync(sourceAbs, workingPath);
+    fs.copyFileSync(sourceAbs, originalSnapshot);
+  }
+  fs.writeFileSync(path.join(runDir, 'source.path'), sourceAbs);
+
+  return { slug, runDir, artifactAbs: workingPath, sourceAbs, historyDir };
+}
+
+function snapshotHistory(runDir, roundN, label, srcPath) {
+  // label: 'input' (before editor) | 'output' (after editor) | other
+  const historyDir = path.join(runDir, 'history');
+  fs.mkdirSync(historyDir, { recursive: true });
+  const dest = path.join(historyDir, `round-${roundN}-${label}.md`);
+  fs.copyFileSync(srcPath, dest);
+  return dest;
 }
 
 function roundDir(runDir, n) {
@@ -38,4 +65,4 @@ function writeFinal(runDir, content, summary) {
   fs.writeFileSync(path.join(runDir, 'polish-log.md'), summary, 'utf-8');
 }
 
-module.exports = { initRun, roundDir, currentRound, writeFinal, slugify };
+module.exports = { initRun, roundDir, currentRound, writeFinal, slugify, snapshotHistory };
