@@ -12,40 +12,42 @@ A solo author can simulate publishing-day pushback in 5–15 minutes per round a
 
 ### Validated
 
-<!-- Shipped through v0.4.2 -->
+<!-- Shipped through v0.6.0 -->
 
 - ✓ **CORE-01** Convergence loop: audience → audit → reviewer wave → aggregate → editor redraft → repeat — v0.1
 - ✓ **CORE-02** Multi-round persistence detection (same finding 2+ rounds → STRUCTURAL) — v0.3
 - ✓ **CORE-03** Source artifact never modified; per-round history snapshots in `.tumble-dry/<slug>/history/` — v0.4
-- ✓ **CORE-04** Per-dispatch reasoning traces (request, response, extended thinking) in `round-N/traces/` — v0.4
+- ✓ **CORE-04** Per-dispatch reasoning traces (request, response, extended thinking) in `round-N/traces/` — v0.4 (full on headless API path; reduced trace fidelity on CC slash-command path due to subagent context isolation)
 - ✓ **CORE-05** Voice anchor self-defaults to source-self-sampling when `voice_refs` is empty — v0.4.2
 - ✓ **CORE-06** Persona libraries by artifact type seeded into audience-inferrer (financial model, copy, pitch deck, blog, strategy doc) — v0.3
 - ✓ **CORE-07** Headless Node CLI (`bin/tumble-dry-loop.cjs`) with API-key dispatch + prompt caching — v0.2
+- ✓ **DISPATCH-01..08** Claude Code-native dispatch via parallel Task subagents (no API key) + plugin spec compliance (.claude-plugin/) + validator + partial-round policy — v0.5.0
+- ✓ **PERSONA-01..06** 40 artifact-type panels with mixed-incentive defaults + runbook + configs.json + audience-inferrer routing — v0.5.1
+- ✓ **HARDEN-01..06** Voice-drift gate blocks convergence (anti-reward-hack) + structural/content drift split + bigram-Dice dedup + round-N brief seeding + trace retention + .gitignore bootstrap — v0.5.1.5
+- ✓ **FORMAT-01..07** Office format ingestion (.docx via mammoth+turndown, .pptx/.xlsx/.pdf via officeparser, unpdf fallback) + typed-result loader contract + structural boundary markers + ROUNDTRIP_WARNING surface + package.json with optionalDependencies — v0.5.2
+- ✓ **CODE-01..07** Code as first-class artifact: linguist-js detection + web-tree-sitter (WASM) AST drift + signature_changed permanent structural flag + language style anchors + editor-code agent + reviewer code-mode branch + verify_cmd config gate — v0.6.0
+- ✓ **QOL-01..03** Scenario-shaped --help, README polish, examples/{office-format,code} READMEs, CHANGELOG.md — v0.6.0
 
 ### Active
 
-<!-- v0.5.0 → v0.6.0 milestone scope -->
+<!-- v0.7 milestone — ROUNDTRIP -->
 
-- [ ] **DISPATCH-01** Claude Code-native dispatch: `/tumble-dry` slash command spawns each agent as parallel `Task` subagents in the user's active session — no API key required
-- [ ] **DISPATCH-02** Agents adapted to Claude Code subagent spec (frontmatter `name` / `description` / `tools` correctly registered via `marketplace.json`)
-- [ ] **DISPATCH-03** Loop logic moves from `bin/tumble-dry-loop.cjs` into the slash command's prose workflow; bin/ stays as headless/CI fallback
-- [ ] **PERSONA-01** Comprehensive persona library covering business/finance, product/engineering, marketing/comms, domain-specific (healthcare, legal, government, academic, education) — derived from `research/*.md`
-- [ ] **PERSONA-02** Runbook (PERSONAS.md + RUNBOOK.md) telling the audience-inferrer how to detect artifact type and pick the right panel
-- [ ] **PERSONA-03** Tumble-dry config defaults per artifact type (panel size, convergence threshold, thinking budget, max rounds) — driven from research outputs
-- [ ] **FORMAT-01** Office format ingestion: `.docx` (mammoth), `.pptx` (OOXML parse), `.xlsx` (SheetJS), `.pdf` (pdf-parse), `.md`/`.txt` direct, pandoc fallback for everything else
-- [ ] **FORMAT-02** Loader produces structured markdown working copy preserving slide/sheet/page boundaries; source binary still preserved in `history/round-0-original.<ext>`
-- [ ] **FORMAT-03** FINAL.md ships as markdown with explicit "manually re-apply to <source>" hint in `polish-log.md` (no automatic roundtrip in this milestone)
-- [ ] **CODE-01** Code first-class: language detection (extension + shebang + tree-sitter) feeds reviewer briefs with language context
-- [ ] **CODE-02** AST-aware drift report: line/symbol-level rather than sentence-level when artifact is code
-- [ ] **CODE-03** Language-specific style anchors (PEP 8, Effective Go, Rust API guidelines) replace voice excerpts when artifact is code
-- [ ] **CODE-04** Code-review persona library: staff eng, security, on-call SRE, new-hire-in-6-months, reviewer-from-hostile-fork
+- [ ] **ROUNDTRIP-01** Opt-in flag `--apply` (slash command) / `--write-final` (CLI). Default behavior unchanged: FINAL.md only + manual re-apply hint. With flag, write `FINAL.<ext>` alongside FINAL.md by re-rendering markdown into the source format.
+- [ ] **ROUNDTRIP-02** `.docx` writer using `docx` npm lib. Preserve heading levels (H1-H6), paragraphs, lists (ordered + unordered), simple tables, inline emphasis (bold/italic/code). Lossy: complex layouts, images, embedded objects, comments, track-changes. Document losses in LOSSY_REPORT.md.
+- [ ] **ROUNDTRIP-03** `.pptx` writer using `pptxgenjs`. Re-render each `<!-- slide:N -->` boundary as one slide; H2 → title, body → bullets/text. Lossy: original templates, animations, embedded media, slide masters, speaker notes (preserved if present in source markdown, else dropped).
+- [ ] **ROUNDTRIP-04** `.xlsx` writer using `exceljs` (NOT SheetJS — same CVE rationale as ingestion). Re-render each `<!-- sheet:Name -->` markdown table as one sheet. Lossy: formulas (markdown table can't carry them), pivot tables, charts, conditional formatting, named ranges.
+- [ ] **ROUNDTRIP-05** `LOSSY_REPORT.md` per run when `--apply` used: lists what survived, what was dropped, what was approximated. Surface to user before they ship the regenerated file.
+- [ ] **ROUNDTRIP-06** PDF roundtrip: explicitly NOT supported. When source is `.pdf` and `--apply` set, error with actionable message: "PDF roundtrip is not supported. Use FINAL.md and re-typeset, or use a markdown→PDF tool of your choice (pandoc, weasyprint, etc.)."
+- [ ] **ROUNDTRIP-07** Tests + per-format smoke fixtures. Round-trip a known docx, verify regenerated docx loads in mammoth and produces equivalent markdown (within preserved-structure tolerance).
+- [ ] **ROUNDTRIP-08** README + CHANGELOG entries; v0.7.0 version bump; SlanchaAi marketplace sync.
 
 ### Out of Scope
 
 <!-- Explicit boundaries -->
 
 - **Gastown / polecat backend** — Removed in v0.4.2. Slow, fragile, requires infra most users don't have. Claude Code-native dispatch covers the multi-context use case.
-- **Automatic roundtrip back to office formats** — Generating valid `.pptx` / `.xlsx` / `.docx` from edited markdown is lossy and brittle (charts, layout, embedded media). Out of scope through v0.6; ships as v0.7+ research item.
+- **PDF roundtrip** — Out of scope permanently. Markdown → PDF is a different rendering problem with multiple acceptable tools (pandoc, weasyprint, etc.) — ROUNDTRIP-06 errors with actionable guidance instead.
+- **Lossless office roundtrip** — `.docx` / `.pptx` / `.xlsx` roundtrip in v0.7 is explicitly LOSSY (no formulas, charts, embedded media, layout templates, animations). LOSSY_REPORT.md surfaces what dropped per run.
 - **Real customer interviews / UX testing** — Tumble-dry simulates fictional reviewers. It complements, never replaces, real user contact for product/UX decisions.
 - **Replacing tests / linters / type checkers** — Code mode complements static analysis, doesn't replace it.
 - **Bring-your-own-LLM beyond Anthropic** — Stays Anthropic-only through v0.6. OpenAI/Gemini/local-model dispatch is a v0.8+ research item.

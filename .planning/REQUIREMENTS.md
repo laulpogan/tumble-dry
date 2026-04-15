@@ -1,133 +1,56 @@
-# Requirements — Milestone v0.5.x → v0.6.0
+# Requirements — Milestone v0.7 (ROUNDTRIP)
 
-**Source:** PROJECT.md Active section, expanded with acceptance criteria.
-**Scope:** v0.5.0 (Claude Code-native dispatch) → v0.5.1 (persona library) → v0.5.2 (office formats) → v0.6.0 (code-aware).
-**Out-of-scope items:** see PROJECT.md Out of Scope section.
+**Source:** PROJECT.md Active section.
+**Scope:** v0.7.0 — opt-in office-format roundtrip (FINAL.md → FINAL.docx/pptx/xlsx alongside).
+**Out-of-scope:** PDF roundtrip (errors with guidance), lossless roundtrip (everything is explicitly lossy).
+**Prior milestone (v0.6.0) requirements:** archived at `.planning/milestones/v0.6.0-REQUIREMENTS.md` and reflected in PROJECT.md Validated section.
 
 ---
 
 ## v1 Requirements (this milestone)
 
-### Dispatch — Claude Code-native (v0.5.0)
+### Roundtrip — opt-in office-format regeneration
 
-- [x] **DISPATCH-01** Slash command `/tumble-dry <artifact>` runs the full convergence loop using only the user's active Claude Code session — no `ANTHROPIC_API_KEY` required, no separate process.
-- [x] **DISPATCH-02** Each agent (audience-inferrer, assumption-auditor, reviewer × N personas, editor) is dispatched as a parallel `Task` (aliased to `Agent` in CC v2.1.63+) call. **All N reviewer Task calls in ONE assistant turn — serial cross-turn dispatch is the #1 silent bug** (false convergence on partial rounds). `bin/validate-plugin.cjs` cross-checks `agents/*.md` frontmatter `name` against `.claude-plugin/marketplace.json` and is CI-gated.
-- [x] **DISPATCH-03** `agents/*.md` frontmatter conforms to current Claude Code plugin-shipped subagent spec: `name` (no `tumble-dry-` prefix — that was wrong), `description`, `tools`, optional `model`/`disallowedTools`/`maxTurns`/`color`. **Plugin-shipped agents cannot use `hooks`, `mcpServers`, or `permissionMode`** — silently stripped by the loader.
-- [x] **DISPATCH-04** Plugin spec compliance: `marketplace.json` relocated to `.claude-plugin/marketplace.json`; new `.claude-plugin/plugin.json` manifest declares the plugin per current CC plugin docs. Verified via `claude plugin validate .` (or equivalent).
-- [x] **DISPATCH-05** Loop orchestration lives in `commands/tumble-dry.md` as prose + bash + Task calls. The bash steps shell out to `bin/tumble-dry.cjs` for data-plane work (init, brief generation, aggregate, drift, finalize) — no LLM calls in bin/. **Filesystem is IPC**: subagents write to known paths from the brief; orchestrator reads `aggregate.md` (5–10KB) only, NOT raw critique files (otherwise context burns).
-- [x] **DISPATCH-06** `bin/tumble-dry-loop.cjs` (the legacy autonomous Node driver) keeps working as the headless / CI fallback. Its docstring + `--help` direct users to `/tumble-dry` for session-auth path. Trace fidelity degradation on CC path (no per-dispatch request/response payload — subagent context is isolated) is documented in README and `polish-log.md`.
-- [x] **DISPATCH-07** Slash command surfaces per-round status to the user (round N starting, M reviewers dispatched, K material findings, converged/continuing) using the existing `[tumble-dry-loop]` log idiom.
-- [x] **DISPATCH-08** Failure-mode taxonomy in `dispatch-errors.md`: Task timeout, malformed agent output (no severity tag, parse fail), refusal, silent-text-return-instead-of-file-write. Pre-dispatch manifest of expected critique paths; post-fanout glob reconciliation. **Partial-round policy:** if `M/N >= 0.6` AND material > 0, proceed with degradation warning; else retry-once with stricter brief; then abort with diagnostic.
-
-### Persona Library (v0.5.1)
-
-- [x] **PERSONA-01** `personas/library.md` ships covering ≥30 artifact types across 4 families (business/finance, product/engineering, marketing/comms, domain-specific). Each persona has **mandatory fields**: name, role, 1-2 sentence bio, **hiring job**, **bounce trigger**, **one load-bearing belief**. Default panels MUST pair believers with skeptics (anti-mode-collapse — Pitfall 16).
-- [x] **PERSONA-02** `personas/runbook.md` tells the audience-inferrer: how to detect artifact type, which panel to pick from the library, how to mix/match across families, when to add the layman + when to add the operator. Includes the structural-vs-surface failure-mode index per artifact type.
-- [x] **PERSONA-03** `personas/configs.json` declares per-artifact-type defaults (panel_size, convergence_threshold, editor_thinking_budget, max_rounds, **drift_threshold** — code mode stricter) — derived from the research files.
-- [x] **PERSONA-04** `agents/audience-inferrer.md` reads the library + runbook + configs at build-brief time (or has them inlined). Does NOT duplicate the full library — references it.
-- [x] **PERSONA-05** Library incorporates the structural-vs-surface design rule: every artifact type lists known structural failure modes (premise problems editor rewrites can't fix) sourced from the research markdown.
-- [x] **PERSONA-06** Code-review persona section in the library (staff eng, security, on-call SRE, new-hire-in-6-months, hostile-fork reviewer) — derived from research/product-engineering.md. Each persona's bounce trigger excludes "linter-catchable issues."
-
-### Office Format Ingestion (v0.5.2)
-
-- [x] **FORMAT-01** `lib/loader.cjs` auto-detects file type by extension and dispatches to the appropriate converter. Supported on init: `.md`, `.markdown`, `.txt` (identity); `.docx` (`mammoth` → HTML → `turndown` → markdown); `.pptx` / `.xlsx` (`officeparser` unified AST); `.pdf` (`officeparser` primary, `unpdf` fallback — `unpdf` is ESM-only, loader uses dynamic `import()`). Pandoc fallback for everything else when present on PATH. **NOT used:** `xlsx` (SheetJS) — left npm 2023 with stale CVE; `pdf-parse` — abandoned. See `.planning/research/STACK.md` §What NOT to use.
-- [x] **FORMAT-01a** Every loader returns the typed-result contract `{ok:true, markdown, format, warnings[]} | {ok:false, reason:'encrypted'|'corrupt'|'unsupported'|'empty'|'too_large', detail}`. Loader callers branch on `ok`, never throw.
-- [x] **FORMAT-02** Loaders preserve structure in the markdown working copy with HTML-comment boundary markers the editor MUST preserve verbatim: slide N → `<!-- slide:N -->\n## Slide N — <title>`; sheet → `<!-- sheet:Name -->\n## Sheet: <name>` + markdown table; pdf page → `<!-- page:N -->\n## Page N`. Reviewers see structure; aggregator dedup uses markers as anchor.
-- [x] **FORMAT-03** Source binary is preserved at `.tumble-dry/<slug>/history/round-0-original.<ext>` (byte-for-byte). working.md is the markdown projection.
-- [x] **FORMAT-04** When source is non-markdown, `lib/loader.cjs` emits `.tumble-dry/<slug>/ROUNDTRIP_WARNING.md` BEFORE round 1 (not just at finalize) explaining "FINAL.md ships as markdown; manually re-apply to <source>". Slash command surfaces the warning to user.
-- [x] **FORMAT-05** `package.json` is introduced; `mammoth`, `turndown`, `officeparser`, `unpdf` declared as `optionalDependencies` so the headless `bin/` path still works without `npm install` for users only polishing markdown.
-- [x] **FORMAT-06** Loaders fail gracefully (return `{ok:false}`) with actionable messages on encrypted/password-protected files, oversized files (>20MB unless explicit override; loader forks to child process for >5MB to bound memory), unrecognized extensions.
-- [x] **FORMAT-07** Encoding correctness — UTF-8 default, BOM stripped, CJK + RTL preserved through the loader → markdown projection. Test fixtures in `tests/fixtures/format/` (CJK docx, RTL pdf, curly-quote xlsx, emoji md).
-
-### Code Support (v0.6.0)
-
-- [x] **CODE-01** Source detected as code via `linguist-js` (extension + content heuristics) + shebang fallback. Detector contract: `{primary: lang, regions: [{lang, range}], confidence}` for polyglot artifacts (.ipynb cells, .html with embedded JS/CSS, shell-with-python-heredoc). Reviewer briefs include `language: <primary>` plus per-region annotations.
-- [x] **CODE-02** AST-aware drift report using **`web-tree-sitter` (WASM)** — NOT native `tree-sitter` bindings (break on Windows + Linux ARM + fresh macOS). Drift taxonomy: `unchanged | renamed | moved | modified | signature_changed | added | removed | reformatted` at function/symbol granularity. Signature changes on public API are permanent structural flag (cannot be silently auto-converged). Falls back to sentence diff if a language's WASM grammar isn't present.
-- [x] **CODE-03** `lib/loaders/code.cjs` produces a structured projection (file list with per-file fence blocks tagged with language) when source is a code directory rather than a single file.
-- [x] **CODE-04** Editor brief swaps voice excerpts for language-specific style anchors when artifact is code (PEP 8 for Python, Effective Go for Go, Rust API guidelines for Rust, JavaScript Standard for JS, language defaults table for others).
-- [x] **CODE-05** Code-review persona panel pulls from PERSONA-06 by default when artifact is code; layman gets replaced with new-hire-in-6-months. Reviewer briefs include "do NOT flag issues a linter would catch — assume linter clean."
-- [x] **CODE-06** Editor rewrite in code mode is constrained to NOT introduce undefined references / unimported modules / syntax errors. Failed parse on the redraft = drift report flags `proposed-redraft-invalid` and the loop continues without applying.
-- [x] **CODE-07** `verify_cmd` config hook: editor redraft must pass user-defined verify command (default `npm test -- --run` when `package.json` has a `test` script; otherwise none) AND tree-sitter parseability check before convergence is allowed. Failed verify_cmd = redraft rejected, loop continues with prior state. Sandboxing strategy documented in phase planning.
-
-### Core Hardening (cross-cutting — derived from PITFALLS)
-
-- [x] **HARDEN-01** Voice-drift gate **BLOCKS** convergence (currently only reports). When cumulative content-drift from `round-0-original.md` exceeds threshold, mark round as `drift-blocked` and continue regardless of material count. Anti-reward-hack against editor convergence-by-claim-suppression (Pitfall 17).
-- [x] **HARDEN-02** Split `lib/voice.cjs` drift into `structural_drift` (markdown-only changes — heading reflow, list rewrap) and `content_drift` (substantive sentence rewrites). Only `content_drift` gates convergence. Structural drift is informational.
-- [x] **HARDEN-03** Aggregator dedup upgrade `lib/aggregator.cjs`: token-Jaccard → bigram-Dice for paraphrase robustness. Boundary markers from FORMAT-02 (`<!-- slide:N -->` etc.) used as additional anchors when present.
-- [x] **HARDEN-04** Round-N reviewer briefs are seeded with round-(N-1) **unresolved material clusters** so reviewers explicitly check "did the editor address X?" Stops findings from disappearing into nothing across rounds.
-- [x] **HARDEN-05** Trace retention default: last 3 rounds full, older rounds gzipped + summarized. `.tumble-dry/<slug>/traces/INDEX.md` lists what's retained vs. archived.
-- [x] **HARDEN-06** `.tumble-dry/` appended to project `.gitignore` automatically on first run (idempotent — checks for line presence). Prevents accidental commit of working copies + traces.
-
-### Quality of Life — across the milestone
-
-- [x] **QOL-01** `/tumble-dry --help` prints scenario-shaped usage examples (polish a substack post, polish a pitch deck, polish a code refactor PR description, polish a docx).
-- [x] **QOL-02** README updated end-to-end with v0.5.x screenshots / sample output and the new Claude Code-native invocation as the primary path.
-- [x] **QOL-03** Examples directory grows: existing `examples/dogfood-2026-04-14/` (substack post) joined by ≥1 example for office-format polish + ≥1 example for code polish.
+- [ ] **ROUNDTRIP-01** Opt-in flag: slash command accepts `--apply`; CLI accepts `--write-final`. Default behavior unchanged: only FINAL.md is produced + manual re-apply hint. With flag, also write `FINAL.<ext>` alongside FINAL.md by re-rendering markdown into the source format.
+- [ ] **ROUNDTRIP-02** `.docx` writer at `lib/writers/docx.cjs` using `docx@^9` npm lib. Preserves: heading levels (H1-H6), paragraphs, ordered + unordered lists, simple markdown tables, inline emphasis (bold/italic/inline code), block quotes. Drops: complex layouts, images, embedded objects, comments, track-changes, custom styles, footnotes (markdown footnote syntax may be supported as endnotes if cheap).
+- [ ] **ROUNDTRIP-03** `.pptx` writer at `lib/writers/pptx.cjs` using `pptxgenjs@^3` npm lib. Re-renders each `<!-- slide:N -->` boundary marker as one slide. Per-slide structure: H2 → title text box; subsequent paragraphs/bullets → body text box. Drops: original templates, animations, transitions, embedded media, slide masters, theme colors. Speaker notes preserved if present in source markdown (e.g., `<!-- notes: ... -->`), else dropped.
+- [ ] **ROUNDTRIP-04** `.xlsx` writer at `lib/writers/xlsx.cjs` using `exceljs@^4` npm lib (NOT SheetJS — same CVE rationale as ingestion). Re-renders each `<!-- sheet:Name -->` markdown table as one sheet. Drops: formulas (markdown table cells become literal strings/numbers), pivot tables, charts, conditional formatting, data validation, named ranges, frozen panes.
+- [ ] **ROUNDTRIP-05** `lib/writers/lossy-report.cjs` produces `LOSSY_REPORT.md` per run when `--apply`/`--write-final` is set. Sections: "Survived" (preserved from source), "Approximated" (lossy mapping noted), "Dropped" (entirely lost — formulas, animations, etc.). Surfaced to user before they ship the regenerated file (printed by slash command, listed in `polish-log.md`).
+- [ ] **ROUNDTRIP-06** PDF roundtrip explicitly NOT supported. When source is `.pdf` and `--apply` flag is set, error with actionable message: `"PDF roundtrip is not supported. FINAL.md is your polished output — re-typeset with pandoc / weasyprint / your preferred markdown→PDF tool. See README §Roundtrip for rationale."` Without flag, behavior unchanged (FINAL.md emitted, no error).
+- [ ] **ROUNDTRIP-07** Tests + per-format smoke fixtures at `tests/roundtrip.test.cjs`:
+   - Round-trip a known docx through the full pipeline (load → tumble-dry mock convergence → write FINAL.docx). Verify regenerated docx loads in `mammoth` and produces equivalent markdown within preserved-structure tolerance (heading depths match, list counts match, table dimensions match).
+   - Same for pptx (verify slide count + per-slide title text matches).
+   - Same for xlsx (verify sheet count + per-sheet table dimensions match).
+   - PDF: verify error path (loader-set source_format='pdf' + `--apply` → throws with the expected message).
+- [ ] **ROUNDTRIP-08** Documentation + release:
+   - README `## Roundtrip` section: how to use `--apply`, what's preserved/dropped per format, link to LOSSY_REPORT for runtime details, explicit PDF non-support callout.
+   - CHANGELOG entry for v0.7.0.
+   - VERSION → 0.7.0; `.claude-plugin/plugin.json` + `marketplace.json` bumped.
+   - Sync to `SlanchaAi/skills/plugins/tumble-dry`.
+   - Tag `v0.7.0` and push.
 
 ---
 
 ## v2 (deferred — not in this milestone)
 
-- **ROUNDTRIP-01** Generate valid `.docx` / `.pptx` / `.xlsx` from edited markdown so source can be replaced in-place. Lossy and brittle; requires v0.7+ research.
-- **MULTI-LLM-01** OpenAI / Gemini / local-model dispatch as alternatives to Anthropic. Anthropic-only through v0.6.
-- **WEB-UI-01** Hosted SaaS or web-app frontend. CLI + plugin only through v0.6.
-- **VOICE-FT-01** Personal fine-tuned voice model swap-in (the `fine_tune_model_path` config knob). Awaiting completion of the user's separate corpus project.
-- **REAL-USER-01** Integration with real-user feedback channels (Posthog, Sentry, customer interview transcripts). Out of philosophy; tumble-dry simulates, doesn't substitute.
+- **MULTI-LLM-01** OpenAI / Gemini / local-model dispatch as alternatives to Anthropic. Anthropic-only through v0.7. Targeting v0.8+.
+- **VOICE-FT-01** Personal fine-tuned voice model swap-in. Awaiting completion of the user's separate corpus project.
+- **WEB-UI-01** / **REAL-USER-01** Anti-features per PROJECT.md philosophy.
 
-## Out of Scope (explicit exclusions)
+## Out of Scope (explicit exclusions, this milestone)
 
-- **Gastown / polecat backend** — Removed in v0.4.2. Slow, fragile, requires infra. Claude Code subagents replace it.
-- **Automatic office-format roundtrip** — Lossy. Honest manual re-apply through v0.6.
-- **Replacing tests / linters / type checkers** — Tumble-dry complements static analysis in code mode, never replaces it.
-- **Real customer interviews / UX testing** — Tool simulates fictional reviewers; real users are a different category.
+- **PDF roundtrip** — Explicitly errors. Markdown→PDF is a different rendering problem with multiple acceptable third-party tools (pandoc, weasyprint, typst).
+- **Lossless roundtrip** — Not achievable from a markdown projection. v0.7 is honestly lossy; LOSSY_REPORT.md tells the user what they're losing.
+- **Roundtrip as default** — Manual re-apply remains default. `--apply` is opt-in.
 
 ---
 
 ## Traceability
 
-Each Active requirement maps to exactly one phase. Coverage: 38/38.
-
-| REQ-ID | Phase | Status |
-|--------|-------|--------|
-| DISPATCH-01 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-02 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-03 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-04 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-05 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-06 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-07 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| DISPATCH-08 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| PERSONA-01 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| PERSONA-02 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| PERSONA-03 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| PERSONA-04 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| PERSONA-05 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| PERSONA-06 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| HARDEN-01 | Phase 3 — CORE-HARDEN | Complete |
-| HARDEN-02 | Phase 3 — CORE-HARDEN | Complete |
-| HARDEN-03 | Phase 3 — CORE-HARDEN | Complete |
-| HARDEN-04 | Phase 3 — CORE-HARDEN | Complete |
-| HARDEN-05 | Phase 3 — CORE-HARDEN | Complete |
-| HARDEN-06 | Phase 3 — CORE-HARDEN | Complete |
-| FORMAT-01 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-01a | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-02 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-03 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-04 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-05 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-06 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| FORMAT-07 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| CODE-01 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-02 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-03 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-04 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-05 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-06 | Phase 5 — CODE (v0.6.0) | Complete |
-| CODE-07 | Phase 5 — CODE (v0.6.0) | Complete |
-| QOL-01 | Phase 6 — RELEASE / QOL | Complete |
-| QOL-02 | Phase 6 — RELEASE / QOL | Complete |
-| QOL-03 | Phase 6 — RELEASE / QOL | Complete |
+| REQ-ID | Phase |
+|--------|-------|
+| ROUNDTRIP-01..08 | Phase 7 |
 
 ---
 
-*Defined: 2026-04-15 during v0.5.x milestone init. Traceability filled by /gsd-roadmapper 2026-04-15.*
+*Defined: 2026-04-15 during v0.7 milestone init.*

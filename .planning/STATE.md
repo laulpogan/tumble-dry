@@ -1,80 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.6.0
-milestone_name: close
-status: v0.6.0 ship-ready — all 38 v1 requirements complete, all 6 phases complete
-last_updated: "2026-04-15T23:15:00.000Z"
-progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+milestone: v0.7.0
+milestone_name: roundtrip
+status: ready_to_plan
+phases_total: 1
+phases_complete: 0
+last_activity: 2026-04-15
 ---
 
-# STATE — tumble-dry v0.5.x → v0.6.0
+# STATE — tumble-dry
 
 ## Project Reference
 
-- **Core value:** Solo author simulates publishing-day pushback in 5–15 min/round and ships a piece already stress-tested by the people they actually fear — no real users, money, or reputation burned.
-- **Current focus:** Milestone v0.5.0 → v0.6.0 — Claude Code-native dispatch + persona library + core hardening + office formats + code mode + release.
-- **Repo:** https://github.com/laulpogan/tumble-dry (mirror: SlanchaAi/skills marketplace)
-- **Baseline:** v0.4.2 ships today (gastown ripped, voice self-defaults, headless CLI working).
+See: `.planning/PROJECT.md` (updated 2026-04-15)
 
-## Current Position
+**Core value:** A solo author can simulate publishing-day pushback in 5–15 minutes per round and ship a piece that has already been stress-tested by the people they actually fear.
+**Current focus:** v0.7 ROUNDTRIP — opt-in office-format regeneration
 
-- **Milestone:** v0.6.0 — **SHIPPED**
-- **Phase:** Phase 6 — RELEASE / QOL — complete
-- **Plan:** all phases closed
-- **Status:** v0.6.0 ship-ready; CHANGELOG.md + examples/ + README polish landed; all 38 v1 requirements Complete
-- **Progress:** [██████████] 100%
+## Milestone
 
-```
-[##########] 100% (6/6)
-```
+**Active:** v0.7.0 — ROUNDTRIP
+**Phases:** 1 (Phase 7)
+**Status:** Ready to plan
+**Last activity:** 2026-04-15 milestone init
 
-## Performance Metrics
+## Recent
 
-- Roadmap created: 2026-04-15
-- Phases: 6 (5 main + 1 release)
-- Active requirements: 38, all mapped
-- Coverage: 100%
+- v0.6.0 shipped 2026-04-15: 6 phases (DISPATCH, PERSONA, CORE-HARDEN, FORMAT, CODE, RELEASE), 38 requirements, tag pushed, marketplace synced.
+- New milestone v0.7 init: PROJECT.md updated (v0.6.0 reqs → Validated; ROUNDTRIP-01..08 → Active), REQUIREMENTS.md replaced (prior archived at `.planning/milestones/v0.6.0-REQUIREMENTS.md`), ROADMAP.md replaced (prior archived).
 
-## Accumulated Context
+## Next
 
-### Key Decisions (carried from PROJECT.md)
-
-- Slash-command-prose is the orchestrator (NOT a dispatcher subagent, NOT MCP). bin/ stays as headless fallback.
-- All N reviewer Task calls fan out in ONE assistant turn (serial cross-turn dispatch is the #1 silent bug).
-- Office stack: `mammoth`+`turndown` (docx), `officeparser` (pptx/xlsx/pdf), `unpdf` (PDF fallback). NOT SheetJS, NOT pdf-parse.
-- `web-tree-sitter` (WASM), NOT native tree-sitter (breaks Windows + Linux ARM + fresh macOS).
-- Filesystem is IPC — orchestrator reads `aggregate.md` only, not raw critique files.
-- Voice-drift gate BLOCKS convergence (HARDEN-01) — cumulative from round-0.
-- `package.json` lands in Phase 4 (FORMAT) as `optionalDependencies`; markdown-only users never `npm install`.
-
-### Open Todos
-
-- Smoke-test CC `Agent` parallel-fanout in Phase 1 planning (5-min test before committing orchestration pattern).
-- Decide token-budget strategy for audience-inferrer on large artifacts (inline source vs. read-from-disk).
-- Decide `verify_cmd` sandboxing UX in CC plugin context (Phase 5 planning).
-- Decide persona library extraction mechanism (hand-curated vs. machine-assembled vs. copy-paste from research files) in Phase 2 planning.
-- Create office-format test fixtures (CJK docx, RTL pdf, curly-quote xlsx, emoji md) in Phase 4.
-
-### Blockers
-
-- None.
-
-### Risks Flagged
-
-- CORE-04 trace fidelity partially degrades on CC path (subagent context isolation). Document in README + polish-log.md (Phase 1).
-- `web-tree-sitter` ABI version pinning required across grammar WASM packages (Phase 5).
-
-## Session Continuity
-
-- **Last session:** 2026-04-15T23:15:00.000Z
-- **Stopped at:** Completed Phase 6 (RELEASE / QOL) — v0.6.0 ship-ready
-- **Next action:** Tag `v0.6.0` and announce (marketplace sync via SlanchaAi/skills). For the next milestone, start from `REQUIREMENTS.md §v2` deferred items (ROUNDTRIP-01 / MULTI-LLM-01 / WEB-UI-01 / VOICE-FT-01 / REAL-USER-01).
-
----
-
-*Initialized: 2026-04-15 by /gsd-roadmapper.*
+- `/gsd-plan-phase 7` — decompose ROUNDTRIP into executable plans
