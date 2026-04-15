@@ -46,8 +46,25 @@ Parse `$ARGUMENTS` into:
 
 ```bash
 INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init "$ARTIFACT")
-SLUG=$(echo "$INIT_OUT" | grep -oE 'slug=[^ ]+' | cut -d= -f2)
-echo "[tumble-dry-loop] slug=$SLUG starting at round 1"
+INIT_STATUS=$?
+if [ $INIT_STATUS -ne 0 ]; then
+  echo "[tumble-dry-loop] FATAL: init failed (exit $INIT_STATUS) — see stderr above"
+  exit $INIT_STATUS
+fi
+# init emits JSON on stdout. Parse fields we need.
+SLUG=$(echo "$INIT_OUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);console.log(j.slug||"")}catch{console.log("")}}')
+SOURCE_FORMAT=$(echo "$INIT_OUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);console.log(j.source_format||"")}catch{console.log("")}}')
+echo "[tumble-dry-loop] slug=$SLUG source_format=${SOURCE_FORMAT:-markdown} starting at round 1"
+
+# FORMAT-04: if non-markdown source, show ROUNDTRIP_WARNING.md before round 1
+WARN_FILE=".tumble-dry/$SLUG/ROUNDTRIP_WARNING.md"
+if [ -f "$WARN_FILE" ]; then
+  echo ""
+  echo "==================== ROUNDTRIP WARNING ===================="
+  cat "$WARN_FILE"
+  echo "==========================================================="
+  echo ""
+fi
 ```
 
 ## Round loop
