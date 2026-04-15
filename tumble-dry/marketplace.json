@@ -1,0 +1,22 @@
+{
+  "name": "tumble-dry",
+  "version": "0.3.0",
+  "description": "Polish content through simulated public contact — parallel reviewer polecats, assumption audit, voice-preserving editor.",
+  "author": "Paul Logan",
+  "commands": [
+    {
+      "name": "tumble-dry",
+      "path": "commands/tumble-dry.md"
+    }
+  ],
+  "agents": [
+    { "name": "audience-inferrer",  "path": "agents/audience-inferrer.md" },
+    { "name": "assumption-auditor", "path": "agents/assumption-auditor.md" },
+    { "name": "reviewer",           "path": "agents/reviewer.md" },
+    { "name": "editor",             "path": "agents/editor.md" }
+  ],
+  "requires": {
+    "optional": ["gastown"],
+    "fallback": "claude-code-task-tool"
+  }
+}

@@ -1,0 +1,177 @@
+const fs = require('fs');
+const path = require('path');
+
+function listTextFiles(dir) {
+  const out = [];
+  if (!fs.existsSync(dir)) return out;
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try { entries = fs.readdirSync(cur, { withFileTypes: true }); } catch { continue; }
+    for (const e of entries) {
+      const full = path.join(cur, e.name);
+      if (e.isDirectory()) stack.push(full);
+      else if (e.isFile() && /\.(md|markdown|txt)$/i.test(e.name)) out.push(full);
+    }
+  }
+  return out;
+}
+
+function sampleExcerpts(voiceRefs, count = 4, excerptChars = 1200) {
+  const pool = [];
+  for (const ref of voiceRefs || []) {
+    let stat;
+    try { stat = fs.statSync(ref); } catch { continue; }
+    if (stat.isDirectory()) pool.push(...listTextFiles(ref));
+    else if (stat.isFile()) pool.push(ref);
+  }
+  if (!pool.length) return [];
+
+  const excerpts = [];
+  const seen = new Set();
+  const maxTries = Math.min(count * 4, pool.length * 2);
+  for (let i = 0; i < maxTries && excerpts.length < count; i++) {
+    const file = pool[Math.floor(Math.random() * pool.length)];
+    if (seen.has(file)) continue;
+    seen.add(file);
+    let fd, size;
+    try {
+      const st = fs.statSync(file);
+      size = st.size;
+      if (!size) continue;
+      fd = fs.openSync(file, 'r');
+    } catch { continue; }
+    const start = size > excerptChars ? Math.floor(Math.random() * (size - excerptChars)) : 0;
+    const buf = Buffer.alloc(Math.min(excerptChars, size));
+    try {
+      fs.readSync(fd, buf, 0, buf.length, start);
+    } catch { fs.closeSync(fd); continue; }
+    fs.closeSync(fd);
+    const raw = buf.toString('utf-8');
+    if (!raw.trim()) continue;
+    const trimmed = start > 0 ? raw.replace(/^[^\n]*\n/, '…\n') : raw;
+    excerpts.push({ file: path.basename(file), text: trimmed.trim() });
+  }
+  return excerpts;
+}
+
+function tokenize(s) {
+  return s.toLowerCase().match(/[a-z0-9']+/g) || [];
+}
+
+function characterBigrams(s) {
+  const normalized = (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const out = new Set();
+  for (let i = 0; i < normalized.length - 1; i++) out.add(normalized.slice(i, i + 2));
+  return out;
+}
+
+function bigramSimilarity(a, b) {
+  const ba = characterBigrams(a);
+  const bb = characterBigrams(b);
+  if (!ba.size || !bb.size) return 0;
+  let inter = 0;
+  for (const g of ba) if (bb.has(g)) inter++;
+  // Dice coefficient: 2*inter / (|A| + |B|)
+  return (2 * inter) / (ba.size + bb.size);
+}
+
+function sentenceOverlap(a, b) {
+  const ta = new Set(tokenize(a));
+  const tb = new Set(tokenize(b));
+  if (!ta.size || !tb.size) return 1;
+  let inter = 0;
+  for (const t of ta) if (tb.has(t)) inter++;
+  const denom = Math.max(ta.size, tb.size);
+  return inter / denom;
+}
+
+function splitSentences(text) {
+  return text
+    .split(/(?<=[.!?])\s+(?=[A-Z"'“])/)
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Classify each AFTER-sentence as one of:
+ *   unchanged  — matches a BEFORE-sentence at overlap ≥ preservedThreshold (default 0.85)
+ *   modified   — matches a BEFORE-sentence at overlap ≥ driftThreshold but < preservedThreshold
+ *   inserted   — best match to BEFORE is below driftThreshold (i.e., net-new content)
+ *
+ * Drift score = modified / (unchanged + modified). Insertions don't inflate it.
+ *
+ * Also reports deleted sentences — BEFORE-sentences with no AFTER-sentence above driftThreshold.
+ */
+function voiceDriftReport(beforeText, afterText, {
+  driftThreshold = 0.6,
+  preservedThreshold = 0.85,
+} = {}) {
+  const before = splitSentences(beforeText);
+  const after = splitSentences(afterText);
+  const classifications = [];
+  const beforeMatched = new Array(before.length).fill(false);
+
+  for (const aSent of after) {
+    let best = 0, bestIdx = -1;
+    for (let i = 0; i < before.length; i++) {
+      const s = sentenceOverlap(aSent, before[i]);
+      if (s > best) { best = s; bestIdx = i; }
+    }
+    let kind;
+    if (best >= preservedThreshold) { kind = 'unchanged'; beforeMatched[bestIdx] = true; }
+    else if (best >= driftThreshold) { kind = 'modified';  beforeMatched[bestIdx] = true; }
+    else { kind = 'inserted'; }
+    classifications.push({
+      kind,
+      after: aSent,
+      before: bestIdx >= 0 ? before[bestIdx] : null,
+      overlap: Number(best.toFixed(3)),
+      afterIdx: classifications.length,
+    });
+  }
+
+  // Second pass: heavy-paraphrase detection.
+  // Pair "inserted" after-sentences with still-unmatched "deleted" before-sentences
+  // by longest-common-bigrams / length similarity. If a weak signal exists, reclassify
+  // both as a modified pair rather than inserted+deleted.
+  const insertedClassifications = classifications.filter(c => c.kind === 'inserted');
+  for (const ins of insertedClassifications) {
+    let best = 0, bestIdx = -1;
+    for (let i = 0; i < before.length; i++) {
+      if (beforeMatched[i]) continue;
+      const score = bigramSimilarity(ins.after, before[i]);
+      if (score > best) { best = score; bestIdx = i; }
+    }
+    // Bigram Dice ≥ 0.35 is the paraphrase threshold. Lower is noise.
+    // A proper paraphrase shares enough character structure to pass this;
+    // unrelated sentences won't. Proper semantic match needs embeddings — v2.
+    if (best >= 0.35 && bestIdx >= 0) {
+      ins.kind = 'modified';
+      ins.before = before[bestIdx];
+      ins.overlap = Number(best.toFixed(3));
+      ins.paraphrase = true;
+      beforeMatched[bestIdx] = true;
+    }
+  }
+
+  const deleted = before.filter((_, i) => !beforeMatched[i]);
+  const counts = { unchanged: 0, modified: 0, inserted: 0, deleted: deleted.length };
+  for (const c of classifications) counts[c.kind]++;
+
+  const preservedPool = counts.unchanged + counts.modified;
+  const drift_score = preservedPool > 0 ? Number((counts.modified / preservedPool).toFixed(3)) : 0;
+
+  return {
+    sentences_after: after.length,
+    sentences_before: before.length,
+    counts,
+    drift_score,
+    modified_samples: classifications.filter(c => c.kind === 'modified').slice(0, 10),
+    inserted_samples: classifications.filter(c => c.kind === 'inserted').slice(0, 10).map(c => c.after),
+    deleted_samples: deleted.slice(0, 10),
+  };
+}
+
+module.exports = { sampleExcerpts, voiceDriftReport, sentenceOverlap };
