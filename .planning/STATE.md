@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
 milestone: v0.6.0
-milestone_name: close)
-status: Roadmap created; awaiting `/gsd-plan-phase 1`
-last_updated: "2026-04-15T21:45:20.821Z"
+milestone_name: close
+status: v0.6.0 ship-ready — all 38 v1 requirements complete, all 6 phases complete
+last_updated: "2026-04-15T23:15:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 5
-  percent: 0
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # STATE — tumble-dry v0.5.x → v0.6.0
@@ -23,14 +23,14 @@ progress:
 
 ## Current Position
 
-- **Milestone:** v0.5.x → v0.6.0
-- **Phase:** Phase 1 — DISPATCH (v0.5.0) — not started
-- **Plan:** none yet
-- **Status:** Roadmap created; awaiting `/gsd-plan-phase 1`
-- **Progress:** [░░░░░░░░░░] 0%
+- **Milestone:** v0.6.0 — **SHIPPED**
+- **Phase:** Phase 6 — RELEASE / QOL — complete
+- **Plan:** all phases closed
+- **Status:** v0.6.0 ship-ready; CHANGELOG.md + examples/ + README polish landed; all 38 v1 requirements Complete
+- **Progress:** [██████████] 100%
 
 ```
-[          ] 0% (0/6)
+[##########] 100% (6/6)
 ```
 
 ## Performance Metrics
@@ -71,8 +71,9 @@ progress:
 
 ## Session Continuity
 
-- **Last session:** 2026-04-15T21:45:20.817Z
-- **Next action:** `/gsd-plan-phase 1` to decompose DISPATCH into executable plans.
+- **Last session:** 2026-04-15T23:15:00.000Z
+- **Stopped at:** Completed Phase 6 (RELEASE / QOL) — v0.6.0 ship-ready
+- **Next action:** Tag `v0.6.0` and announce (marketplace sync via SlanchaAi/skills). For the next milestone, start from `REQUIREMENTS.md §v2` deferred items (ROUNDTRIP-01 / MULTI-LLM-01 / WEB-UI-01 / VOICE-FT-01 / REAL-USER-01).
 
 ---
 
