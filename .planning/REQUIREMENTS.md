@@ -11,47 +11,47 @@
 
 ### Headless orchestrator + status surfacing (highest leverage)
 
-- [ ] **HEADLESS-01** `/tumble-dry` dispatches the entire convergence loop as a single headless orchestrator subagent (`tumble-dry-orchestrator` agent). Main session sees only: "starting → progress → done + report". The orchestrator does the round-by-round Task fanouts, aggregator calls, editor invocations, drift checks, history snapshots — all inside its own context. Filesystem IPC unchanged.
-- [ ] **HEADLESS-02** Orchestrator emits `.tumble-dry/<slug>/status.json` per round-phase with `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta}`. Slash command in main session polls it once per round and renders a single-line progress update.
-- [ ] **HEADLESS-03** Per-round `REPORT.md` auto-emitted at `.tumble-dry/<slug>/round-N/REPORT.md`: 1-paragraph summary, top-3 material findings, drift snapshot, what the editor changed. Final `REPORT.md` at `.tumble-dry/<slug>/REPORT.md` rolls them up at convergence.
+- [x] **HEADLESS-01** `/tumble-dry` dispatches the entire convergence loop as a single headless orchestrator subagent (`tumble-dry-orchestrator` agent). Main session sees only: "starting → progress → done + report". The orchestrator does the round-by-round Task fanouts, aggregator calls, editor invocations, drift checks, history snapshots — all inside its own context. Filesystem IPC unchanged.
+- [x] **HEADLESS-02** Orchestrator emits `.tumble-dry/<slug>/status.json` per round-phase with `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta}`. Slash command in main session polls it once per round and renders a single-line progress update.
+- [x] **HEADLESS-03** Per-round `REPORT.md` auto-emitted at `.tumble-dry/<slug>/round-N/REPORT.md`: 1-paragraph summary, top-3 material findings, drift snapshot, what the editor changed. Final `REPORT.md` at `.tumble-dry/<slug>/REPORT.md` rolls them up at convergence.
 
 ### Batch input native (eliminates 17× ceremony)
 
-- [ ] **BATCH-01** `/tumble-dry` accepts globs and directories. Detects N input files, treats them as a batch.
-- [ ] **BATCH-02** Shared audience inference: ONE `audience-inferrer` Task call seeded with concatenated artifact summaries → one panel applied to all N files. Override per-file via `--per-file-audience` flag.
-- [ ] **BATCH-03** Per-file auditor: each file gets its own `assumption-auditor` call (premises differ even when audience shared).
-- [ ] **BATCH-04** Per-file reviewer waves dispatched in parallel batches across files (panel × N files = panel*N Task calls per round, all in ONE assistant turn from the orchestrator).
-- [ ] **BATCH-05** Batch run dir: `.tumble-dry/<batch-slug>/` with per-file subdirs (`<batch-slug>/<file-slug>/...`); shared `voice-refs/` symlinks; one shared `polish-log.md` summarizing all files.
+- [x] **BATCH-01** `/tumble-dry` accepts globs and directories. Detects N input files, treats them as a batch.
+- [x] **BATCH-02** Shared audience inference: ONE `audience-inferrer` Task call seeded with concatenated artifact summaries → one panel applied to all N files. Override per-file via `--per-file-audience` flag.
+- [x] **BATCH-03** Per-file auditor: each file gets its own `assumption-auditor` call (premises differ even when audience shared).
+- [x] **BATCH-04** Per-file reviewer waves dispatched in parallel batches across files (panel × N files = panel*N Task calls per round, all in ONE assistant turn from the orchestrator).
+- [x] **BATCH-05** Batch run dir: `.tumble-dry/<batch-slug>/` with per-file subdirs (`<batch-slug>/<file-slug>/...`); shared `voice-refs/` symlinks; one shared `polish-log.md` summarizing all files.
 
 ### Resume + index (rescue orphaned runs)
 
-- [ ] **STATUS-01** `tumble-dry status` lists all runs in `.tumble-dry/` with columns: `slug | round | converged | material | timestamp`. Exit 0 if all clean; 1 if any unconverged runs exist. Highlights orphans (no `status.json` updates in >1 hour).
-- [ ] **STATUS-02** `tumble-dry resume <slug>` picks up an interrupted run mid-round. Re-emits the orchestrator subagent with `--resume-from-round N`. Detects partial round (some critiques on disk but no aggregate) and finishes the round before deciding next.
+- [x] **STATUS-01** `tumble-dry status` lists all runs in `.tumble-dry/` with columns: `slug | round | converged | material | timestamp`. Exit 0 if all clean; 1 if any unconverged runs exist. Highlights orphans (no `status.json` updates in >1 hour).
+- [x] **STATUS-02** `tumble-dry resume <slug>` picks up an interrupted run mid-round. Re-emits the orchestrator subagent with `--resume-from-round N`. Detects partial round (some critiques on disk but no aggregate) and finishes the round before deciding next.
 
 ### Pre-flight check
 
-- [ ] **DRYRUN-01** `/tumble-dry --dry-run <artifact>` and `bin/tumble-dry-loop.cjs --dry-run` run init + audience inference + assumption audit only, then exit. Prints inferred personas + load-bearing assumptions. Costs ~1 audience-inferrer + 1 auditor call per file. Lets users tweak before committing to N reviewer waves. Includes a `## Estimated cost` block (token estimate × current model price for the full run).
+- [x] **DRYRUN-01** `/tumble-dry --dry-run <artifact>` and `bin/tumble-dry-loop.cjs --dry-run` run init + audience inference + assumption audit only, then exit. Prints inferred personas + load-bearing assumptions. Costs ~1 audience-inferrer + 1 auditor call per file. Lets users tweak before committing to N reviewer waves. Includes a `## Estimated cost` block (token estimate × current model price for the full run).
 
 ### Zero-config first run
 
-- [ ] **CANARY-01** When no `.tumble-dry.yml` exists, infer `voice_refs` from `git log --author "$(git config user.name)" --pretty=format:%H` recent commits in repo. Sample diffs for prose-rich files (README, docs/, blog/, *.md). Auto-detect artifact type via existing persona library detection. Default panel from `personas/configs.json`. Print a one-line "first run — using these defaults: voice_refs=git_history(N=K commits), panel=<size>" notice.
-- [ ] **CANARY-02** First-run setup is non-blocking: tumble-dry runs immediately with inferred defaults. User can later `tumble-dry config init` to dump the inferred config to `.tumble-dry.yml` for editing. No yaml cliff.
+- [x] **CANARY-01** When no `.tumble-dry.yml` exists, infer `voice_refs` from `git log --author "$(git config user.name)" --pretty=format:%H` recent commits in repo. Sample diffs for prose-rich files (README, docs/, blog/, *.md). Auto-detect artifact type via existing persona library detection. Default panel from `personas/configs.json`. Print a one-line "first run — using these defaults: voice_refs=git_history(N=K commits), panel=<size>" notice.
+- [x] **CANARY-02** First-run setup is non-blocking: tumble-dry runs immediately with inferred defaults. User can later `tumble-dry config init` to dump the inferred config to `.tumble-dry.yml` for editing. No yaml cliff.
 
 ### Discoverability
 
-- [ ] **SKILL-01** Register `/tumble-dry` as a discoverable Skill in `.claude-plugin/marketplace.json` (currently only declared as command). Other agents can chain via `Skill(skill="tumble-dry", args="<artifact> --dry-run")` rather than hand-executing the slash-command body.
-- [ ] **SKILL-02** Add `description:` and `argument-hint:` to the Skill registration so it appears correctly in skill listings + AskUserQuestion menus.
+- [x] **SKILL-01** Register `/tumble-dry` as a discoverable Skill in `.claude-plugin/marketplace.json` (currently only declared as command). Other agents can chain via `Skill(skill="tumble-dry", args="<artifact> --dry-run")` rather than hand-executing the slash-command body.
+- [x] **SKILL-02** Add `description:` and `argument-hint:` to the Skill registration so it appears correctly in skill listings + AskUserQuestion menus.
 
 ### Architectural reversal (honest record-keeping)
 
-- [ ] **REVERSAL-01** Update Phase 1 `ARCHITECTURE.md` and v0.5.0 commits with an addendum: slash command is now a thin dispatch wrapper, not the orchestrator. Document why (real-dogfood evidence: 400KB+ of Task-dispatch noise floods main session). Keep historical record honest. Add CHANGELOG entry.
+- [x] **REVERSAL-01** Update Phase 1 `ARCHITECTURE.md` and v0.5.0 commits with an addendum: slash command is now a thin dispatch wrapper, not the orchestrator. Document why (real-dogfood evidence: 400KB+ of Task-dispatch noise floods main session). Keep historical record honest. Add CHANGELOG entry.
 
 ### Release
 
-- [ ] **RELEASE-01** README rewrite emphasizing the new entry-point UX (batch input, dry-run, status, resume). Rewrite Quickstart from scratch — current one assumes single-file polishing.
-- [ ] **RELEASE-02** Examples directory: add `examples/batch-polish/README.md` demonstrating polishing a directory + the per-round REPORT.md output.
-- [ ] **RELEASE-03** CHANGELOG v0.8.0 entry. VERSION + plugin.json + marketplace.json bumped. Tag pushed. SlanchaAi marketplace synced.
-- [ ] **RELEASE-04** Tag v0.7.0 retroactively (ROUNDTRIP code already shipped to main, just ungated). Push.
+- [x] **RELEASE-01** README rewrite emphasizing the new entry-point UX (batch input, dry-run, status, resume). Rewrite Quickstart from scratch — current one assumes single-file polishing.
+- [x] **RELEASE-02** Examples directory: add `examples/batch-polish/README.md` demonstrating polishing a directory + the per-round REPORT.md output.
+- [x] **RELEASE-03** CHANGELOG v0.8.0 entry. VERSION + plugin.json + marketplace.json bumped. Tag pushed. SlanchaAi marketplace synced.
+- [x] **RELEASE-04** Tag v0.7.0 retroactively (ROUNDTRIP code already shipped to main, just ungated). Push.
 
 ---
 

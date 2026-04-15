@@ -14,7 +14,7 @@ Prior milestone roadmaps archived at `.planning/milestones/`.
 
 ## Phases
 
-- [ ] **Phase 8: UX REBUILD (v0.8.0)** — headless orchestrator subagent, batch input, status/resume, dry-run, zero-config canary, Skill registration
+- [x] **Phase 8: UX REBUILD (v0.8.0)** — headless orchestrator subagent, batch input, status/resume, dry-run, zero-config canary, Skill registration [SHIPPED 2026-04-15]
 
 ---
 
