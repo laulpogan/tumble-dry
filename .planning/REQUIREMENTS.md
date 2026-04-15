@@ -51,12 +51,12 @@
 
 ### Core Hardening (cross-cutting — derived from PITFALLS)
 
-- [ ] **HARDEN-01** Voice-drift gate **BLOCKS** convergence (currently only reports). When cumulative content-drift from `round-0-original.md` exceeds threshold, mark round as `drift-blocked` and continue regardless of material count. Anti-reward-hack against editor convergence-by-claim-suppression (Pitfall 17).
-- [ ] **HARDEN-02** Split `lib/voice.cjs` drift into `structural_drift` (markdown-only changes — heading reflow, list rewrap) and `content_drift` (substantive sentence rewrites). Only `content_drift` gates convergence. Structural drift is informational.
-- [ ] **HARDEN-03** Aggregator dedup upgrade `lib/aggregator.cjs`: token-Jaccard → bigram-Dice for paraphrase robustness. Boundary markers from FORMAT-02 (`<!-- slide:N -->` etc.) used as additional anchors when present.
-- [ ] **HARDEN-04** Round-N reviewer briefs are seeded with round-(N-1) **unresolved material clusters** so reviewers explicitly check "did the editor address X?" Stops findings from disappearing into nothing across rounds.
-- [ ] **HARDEN-05** Trace retention default: last 3 rounds full, older rounds gzipped + summarized. `.tumble-dry/<slug>/traces/INDEX.md` lists what's retained vs. archived.
-- [ ] **HARDEN-06** `.tumble-dry/` appended to project `.gitignore` automatically on first run (idempotent — checks for line presence). Prevents accidental commit of working copies + traces.
+- [x] **HARDEN-01** Voice-drift gate **BLOCKS** convergence (currently only reports). When cumulative content-drift from `round-0-original.md` exceeds threshold, mark round as `drift-blocked` and continue regardless of material count. Anti-reward-hack against editor convergence-by-claim-suppression (Pitfall 17).
+- [x] **HARDEN-02** Split `lib/voice.cjs` drift into `structural_drift` (markdown-only changes — heading reflow, list rewrap) and `content_drift` (substantive sentence rewrites). Only `content_drift` gates convergence. Structural drift is informational.
+- [x] **HARDEN-03** Aggregator dedup upgrade `lib/aggregator.cjs`: token-Jaccard → bigram-Dice for paraphrase robustness. Boundary markers from FORMAT-02 (`<!-- slide:N -->` etc.) used as additional anchors when present.
+- [x] **HARDEN-04** Round-N reviewer briefs are seeded with round-(N-1) **unresolved material clusters** so reviewers explicitly check "did the editor address X?" Stops findings from disappearing into nothing across rounds.
+- [x] **HARDEN-05** Trace retention default: last 3 rounds full, older rounds gzipped + summarized. `.tumble-dry/<slug>/traces/INDEX.md` lists what's retained vs. archived.
+- [x] **HARDEN-06** `.tumble-dry/` appended to project `.gitignore` automatically on first run (idempotent — checks for line presence). Prevents accidental commit of working copies + traces.
 
 ### Quality of Life — across the milestone
 
@@ -103,12 +103,12 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 | PERSONA-04 | Phase 2 — PERSONA (v0.5.1) | Complete |
 | PERSONA-05 | Phase 2 — PERSONA (v0.5.1) | Complete |
 | PERSONA-06 | Phase 2 — PERSONA (v0.5.1) | Complete |
-| HARDEN-01 | Phase 3 — CORE-HARDEN | Pending |
-| HARDEN-02 | Phase 3 — CORE-HARDEN | Pending |
-| HARDEN-03 | Phase 3 — CORE-HARDEN | Pending |
-| HARDEN-04 | Phase 3 — CORE-HARDEN | Pending |
-| HARDEN-05 | Phase 3 — CORE-HARDEN | Pending |
-| HARDEN-06 | Phase 3 — CORE-HARDEN | Pending |
+| HARDEN-01 | Phase 3 — CORE-HARDEN | Complete |
+| HARDEN-02 | Phase 3 — CORE-HARDEN | Complete |
+| HARDEN-03 | Phase 3 — CORE-HARDEN | Complete |
+| HARDEN-04 | Phase 3 — CORE-HARDEN | Complete |
+| HARDEN-05 | Phase 3 — CORE-HARDEN | Complete |
+| HARDEN-06 | Phase 3 — CORE-HARDEN | Complete |
 | FORMAT-01 | Phase 4 — FORMAT (v0.5.2) | Pending |
 | FORMAT-01a | Phase 4 — FORMAT (v0.5.2) | Pending |
 | FORMAT-02 | Phase 4 — FORMAT (v0.5.2) | Pending |
