@@ -261,13 +261,33 @@ async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.artifact) {
-    console.error('tumble-dry-loop — headless convergence loop driver');
+    console.error('tumble-dry-loop — headless convergence loop driver (v0.6.0)');
     console.error('');
     console.error('USAGE:');
     console.error('  tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft]');
     console.error('');
     console.error('REQUIRES:');
     console.error('  ANTHROPIC_API_KEY (env var or ~/.anthropic/api_key)');
+    console.error('');
+    console.error('SCENARIO EXAMPLES:');
+    console.error('');
+    console.error('  Polish a substack post (prose):');
+    console.error('    node bin/tumble-dry-loop.cjs post.md');
+    console.error('');
+    console.error('  Polish a pitch deck (office format — .pptx projected to markdown):');
+    console.error('    node bin/tumble-dry-loop.cjs deck.pptx');
+    console.error('    # Loader writes ROUNDTRIP_WARNING.md; FINAL.md ships as markdown,');
+    console.error('    # original .pptx preserved at .tumble-dry/<slug>/history/round-0-original.pptx');
+    console.error('');
+    console.error('  Polish a code refactor PR (AST-aware drift + linter-clean assumption):');
+    console.error('    node bin/tumble-dry-loop.cjs --panel-size 5 src/auth/');
+    console.error('    # Detects code via linguist-js; editor swaps voice for PEP 8 / Effective Go / etc.;');
+    console.error('    # signature changes on public API are permanent STRUCTURAL flags.');
+    console.error('');
+    console.error('  Polish a spec doc with a verify command (.docx + pytest gate):');
+    console.error('    # Set in .tumble-dry.yml:   verify_cmd: "pytest tests/"');
+    console.error('    node bin/tumble-dry-loop.cjs spec.docx');
+    console.error('    # Redraft is rejected if verify_cmd exits non-zero; loop continues with prior state.');
     console.error('');
     console.error('PREFER /tumble-dry inside Claude Code:');
     console.error('  The /tumble-dry slash command runs the same loop using your');

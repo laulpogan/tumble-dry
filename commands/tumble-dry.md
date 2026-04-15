@@ -9,6 +9,15 @@ Run the full tumble-dry convergence loop on a content artifact (markdown doc, bl
 
 This command body IS the orchestrator. Follow the numbered steps below in order. Where a step says "ONE assistant turn", you MUST emit all enumerated `Task(subagent_type=...)` calls in a single message — never serialize them across turns. Inline shape reference: `Task(subagent_type="reviewer", description="...", prompt="...")`.
 
+## Quickstart examples
+
+Four scenarios mirror `bin/tumble-dry-loop.cjs --help`:
+
+- **Polish a substack post (prose):** `/tumble-dry post.md`
+- **Polish a pitch deck (.pptx projected to markdown):** `/tumble-dry deck.pptx` — loader emits `ROUNDTRIP_WARNING.md`; FINAL.md ships as markdown; original `.pptx` preserved byte-for-byte at `.tumble-dry/<slug>/history/round-0-original.pptx`.
+- **Polish a code refactor PR (AST-aware drift, linter-clean assumption):** `/tumble-dry --panel-size 5 src/auth/` — detects code via `linguist-js`; editor swaps voice for PEP 8 / Effective Go / Rust API Guidelines / JS Standard; signature changes on public API are permanent `STRUCTURAL:` flags.
+- **Polish a spec doc with a verify command (.docx + pytest gate):** set `verify_cmd: "pytest tests/"` in `.tumble-dry.yml`, then `/tumble-dry spec.docx`. Redraft is rejected if `verify_cmd` exits non-zero; loop continues with prior state.
+
 ## Resolve plugin home
 
 ```bash
