@@ -46,16 +46,47 @@ function findRunDir(slug) {
   return dir;
 }
 
+async function runInit(artifact) {
+  if (!artifact) die('usage: init <artifact-path>');
+  if (!fs.existsSync(path.resolve(cwd, artifact))) die(`artifact not found: ${artifact}`);
+  let runInfo;
+  try {
+    runInfo = await initRun(cwd, artifact);
+  } catch (err) {
+    const reason = err.reason || 'unknown';
+    console.error(`tumble-dry: init failed (${reason}): ${err.detail || err.message}`);
+    console.error('Supported formats: .md .markdown .txt .docx .pptx .xlsx .pdf (plus pandoc fallback if installed).');
+    if (reason === 'unsupported') {
+      console.error('Hint: run `npm install` in the tumble-dry repo root for .docx/.pptx/.xlsx/.pdf support.');
+    }
+    process.exit(3);
+  }
+  const { slug, runDir, artifactAbs } = runInfo;
+  const round = currentRound(runDir) + 1;
+  const rDir = roundDir(runDir, round);
+  fs.writeFileSync(path.join(runDir, 'artifact.path'), artifactAbs);
+  // Surface loader metadata (FORMAT-04 UX: warn before round 1).
+  const fmtPath = path.join(runDir, 'source-format.json');
+  let formatMeta = null;
+  if (fs.existsSync(fmtPath)) {
+    try { formatMeta = JSON.parse(fs.readFileSync(fmtPath, 'utf-8')); } catch { /* ignore */ }
+    if (formatMeta && formatMeta.warnings && formatMeta.warnings.length) {
+      for (const w of formatMeta.warnings) console.error(`[loader] warning: ${w}`);
+    }
+    if (formatMeta && formatMeta.format && !['markdown','txt'].includes(formatMeta.format)) {
+      console.error(`[loader] source format: ${formatMeta.format} — working on markdown projection; ROUNDTRIP_WARNING.md written.`);
+    }
+  }
+  const out = { slug, run_dir: runDir, round, round_dir: rDir, artifact: artifactAbs };
+  if (formatMeta) out.source_format = formatMeta.format;
+  const warningPath = path.join(runDir, 'ROUNDTRIP_WARNING.md');
+  if (fs.existsSync(warningPath)) out.roundtrip_warning = warningPath;
+  console.log(JSON.stringify(out, null, 2));
+}
+
 switch (cmd) {
   case 'init': {
-    const artifact = argv[1];
-    if (!artifact) die('usage: init <artifact-path>');
-    if (!fs.existsSync(path.resolve(cwd, artifact))) die(`artifact not found: ${artifact}`);
-    const { slug, runDir, artifactAbs } = initRun(cwd, artifact);
-    const round = currentRound(runDir) + 1;
-    const rDir = roundDir(runDir, round);
-    fs.writeFileSync(path.join(runDir, 'artifact.path'), artifactAbs);
-    console.log(JSON.stringify({ slug, run_dir: runDir, round, round_dir: rDir, artifact: artifactAbs }, null, 2));
+    runInit(argv[1]).catch(err => { console.error(err.stack || err.message); process.exit(1); });
     break;
   }
   case 'new-round': {

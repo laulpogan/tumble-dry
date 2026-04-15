@@ -181,11 +181,11 @@ test('HARDEN-06: ensureGitignore idempotent when line present', () => {
   assert.equal(hits.length, 1);
 });
 
-test('HARDEN-06: initRun triggers .gitignore bootstrap on first init', () => {
+test('HARDEN-06: initRun triggers .gitignore bootstrap on first init', async () => {
   const d = tmpdir();
   const src = path.join(d, 'art.md');
   fs.writeFileSync(src, '# Test\n\nHello.');
-  initRun(d, 'art.md');
+  await initRun(d, 'art.md');
   assert.ok(fs.existsSync(path.join(d, '.gitignore')));
   const content = fs.readFileSync(path.join(d, '.gitignore'), 'utf-8');
   assert.match(content, /\.tumble-dry\//);
