@@ -1,0 +1,322 @@
+{
+  "$schema_version": "1.0",
+  "_comment": "Per-artifact-type tumble-dry defaults. Keys match H2 section names in personas/library.md (slugified). Consumed by lib/reviewer-brief.cjs via personas/runbook.md detection. drift_threshold is stricter (0.15) for code artifacts than the default prose (0.25) per PERSONA-03 / CODE-05. convergence_threshold is a count of material findings (per research files) — not a ratio — unless expressed as 0.x which matches marketing-comms source ratios.",
+
+  "default": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 4000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+
+  "seed-pitch-deck": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 3000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "series-a-pitch-deck": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 5000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+  "late-stage-pitch-deck": {
+    "panel_size": 7,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25
+  },
+  "financial-model": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+  "board-memo": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 4000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "_variant_public_co": {
+      "panel_size": 6,
+      "convergence_threshold": 2,
+      "editor_thinking_budget": 7000,
+      "max_rounds": 6,
+      "drift_threshold": 0.25
+    }
+  },
+  "investor-update": {
+    "panel_size": 5,
+    "convergence_threshold": 1,
+    "editor_thinking_budget": 2500,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+  "ma-memo": {
+    "panel_size": 7,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 7,
+    "drift_threshold": 0.25
+  },
+  "annual-report-mda": {
+    "panel_size": 6,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 8,
+    "drift_threshold": 0.25
+  },
+  "earnings-call-script": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 7000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25
+  },
+  "business-case-capex": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 5000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+
+  "prd": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 4000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+  "rfc-adr": {
+    "panel_size": 7,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25
+  },
+  "api-design-doc": {
+    "panel_size": 6,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25
+  },
+  "postmortem": {
+    "panel_size": 6,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 8,
+    "drift_threshold": 0.25
+  },
+  "runbook": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 3000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "readme-contributing": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 2000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "migration-plan": {
+    "panel_size": 6,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25
+  },
+  "threat-model": {
+    "panel_size": 6,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 7,
+    "drift_threshold": 0.25
+  },
+  "ml-eval-model-card": {
+    "panel_size": 7,
+    "convergence_threshold": 3,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 7,
+    "drift_threshold": 0.25
+  },
+  "developer-docs": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 3000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+
+  "press-release": {
+    "panel_size": 6,
+    "convergence_threshold": 0.83,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "crisis-comms": {
+    "panel_size": 7,
+    "convergence_threshold": 0.85,
+    "editor_thinking_budget": 16000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+  "landing-page-pricing": {
+    "panel_size": 7,
+    "convergence_threshold": 0.71,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "cold-email-sequence": {
+    "panel_size": 5,
+    "convergence_threshold": 0.80,
+    "editor_thinking_budget": 2500,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+  "launch-announcement-thread": {
+    "panel_size": 6,
+    "convergence_threshold": 0.83,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+  "brand-guidelines": {
+    "panel_size": 6,
+    "convergence_threshold": 0.83,
+    "editor_thinking_budget": 14000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25
+  },
+  "customer-case-study": {
+    "panel_size": 6,
+    "convergence_threshold": 0.83,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+  "earnings-press-release-ir": {
+    "panel_size": 6,
+    "convergence_threshold": 0.83,
+    "editor_thinking_budget": 14000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25
+  },
+  "conference-talk-abstract": {
+    "panel_size": 5,
+    "convergence_threshold": 0.80,
+    "editor_thinking_budget": 2500,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+  "newsletter-blog": {
+    "panel_size": 5,
+    "convergence_threshold": 0.80,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 3,
+    "drift_threshold": 0.25
+  },
+
+  "patient-facing-health-info": {
+    "panel_size": 6,
+    "convergence_threshold": 0.65,
+    "editor_thinking_budget": 12000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25,
+    "required_checks": ["flesch_kincaid_grade<=8", "cdc_cci_score>=90", "teach_back_simulated"]
+  },
+  "clinical-research-abstract": {
+    "panel_size": 5,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 10000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "required_checks": ["consort_a_or_prisma_a", "body_abstract_consistency", "effect_size_with_ci"]
+  },
+  "contract-tos": {
+    "panel_size": 6,
+    "convergence_threshold": 0.65,
+    "editor_thinking_budget": 12000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25,
+    "required_checks": ["flesch_kincaid<=8_for_consumer", "defined_term_audit", "key_clauses_present"]
+  },
+  "legal-brief": {
+    "panel_size": 6,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 14000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25,
+    "required_checks": ["deep_issue_on_page_1", "citation_form_check", "local_rules", "counterargument_addressed"]
+  },
+  "policy-memo-comment-letter": {
+    "panel_size": 6,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 10000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "required_checks": ["bluf_check", "plain_language_score", "stakeholder_analysis_present"]
+  },
+  "legislative-testimony-oped": {
+    "panel_size": 5,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 8000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "required_checks": ["single_ask", "lede_hook_present", "story_grounded"]
+  },
+  "academic-paper-draft": {
+    "panel_size": 6,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 14000,
+    "max_rounds": 5,
+    "drift_threshold": 0.25,
+    "required_checks": ["gap_statement_present", "contribution_sentence", "limitations_section", "pinker_metadiscourse_audit"]
+  },
+  "grant-proposal": {
+    "panel_size": 7,
+    "convergence_threshold": 0.6,
+    "editor_thinking_budget": 16000,
+    "max_rounds": 6,
+    "drift_threshold": 0.25,
+    "required_checks": ["aims_page_standalone", "foa_responsiveness", "rigor_plan", "broader_impacts_concrete", "page_limits"]
+  },
+  "curriculum-lesson-plan": {
+    "panel_size": 6,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 10000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "required_checks": ["backward_design_integrity", "measurable_objectives", "udl_present", "standards_actually_aligned"]
+  },
+  "educational-explainer": {
+    "panel_size": 5,
+    "convergence_threshold": 0.7,
+    "editor_thinking_budget": 10000,
+    "max_rounds": 4,
+    "drift_threshold": 0.25,
+    "required_checks": ["motivation_before_definition", "prereq_audit", "retrieval_opportunities", "cognitive_load_check"]
+  },
+
+  "code": {
+    "panel_size": 5,
+    "convergence_threshold": 2,
+    "editor_thinking_budget": 6000,
+    "max_rounds": 5,
+    "drift_threshold": 0.15,
+    "_notes": "PERSONA-06 / CODE-05: replace layman with new-hire-in-6-months (Yuki Tanaka). Reviewer brief MUST include 'Do NOT flag issues a linter would catch — assume linter clean.' drift_threshold is 0.15 (stricter than default 0.25) because semantic drift in code is higher-cost than in prose. Consumers also call this type 'code-review'."
+  }
+}
