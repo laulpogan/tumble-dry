@@ -1,18 +1,29 @@
 #!/usr/bin/env node
 /**
- * tumble-dry convergence loop driver.
+ * tumble-dry convergence loop driver — HEADLESS / CI / SCRIPTING fallback.
  *
- * Runs the full multi-round pipeline autonomously:
- *   init → (round 1: audience + audit + reviewers + aggregate → editor if not converged)
- *        → (round 2..N: reviewers on redraft + aggregate → editor if not converged)
- *        → finalize on convergence OR max_rounds hit.
+ * This is one of two control planes for tumble-dry:
+ *
+ *   1. Claude Code-native (PREFERRED for interactive use):
+ *      /tumble-dry <artifact>
+ *      - Inherits Claude Code session auth (no ANTHROPIC_API_KEY needed)
+ *      - Dispatches each agent as a parallel Task subagent
+ *      - Trace fidelity reduced: subagent request/response payloads are
+ *        not exposed to the orchestrator (subagent context isolation).
+ *        CC traces record brief-path, critique-path, timing, and exit status.
+ *
+ *   2. Headless Node CLI (THIS FILE — for CI / scripting / no-CC environments):
+ *      bin/tumble-dry-loop.cjs <artifact>
+ *      - Requires ANTHROPIC_API_KEY (env var or ~/.anthropic/api_key)
+ *      - Full per-dispatch traces (request, response, extended thinking)
+ *        per CORE-04 — see traces/<persona>.json
+ *
+ * Both planes share the same data plane (bin/tumble-dry.cjs subcommands)
+ * and produce the same .tumble-dry/<slug>/ layout, FINAL.md, and
+ * polish-log.md.
  *
  * Usage:
- *   tumble-dry-loop <artifact-path> [--auto-redraft] [--panel-size N]
- *
- * Requires ANTHROPIC_API_KEY. For Claude Code session-auth (no key required),
- * use the /tumble-dry slash command instead — it dispatches each agent as
- * parallel Task subagents inside your active Claude Code session.
+ *   tumble-dry-loop <artifact-path> [--auto-redraft] [--no-auto-redraft] [--panel-size N]
  *
  * Exits 0 on clean convergence, 1 on max_rounds cap, 2 on error.
  */
@@ -124,8 +135,25 @@ async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.artifact) {
-    console.error('usage: tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft]');
-    console.error('  requires ANTHROPIC_API_KEY. For session-auth use /tumble-dry inside Claude Code.');
+    console.error('tumble-dry-loop — headless convergence loop driver');
+    console.error('');
+    console.error('USAGE:');
+    console.error('  tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft]');
+    console.error('');
+    console.error('REQUIRES:');
+    console.error('  ANTHROPIC_API_KEY (env var or ~/.anthropic/api_key)');
+    console.error('');
+    console.error('PREFER /tumble-dry inside Claude Code:');
+    console.error('  The /tumble-dry slash command runs the same loop using your');
+    console.error('  active Claude Code session — no API key required, no separate');
+    console.error('  process. Use this headless CLI only for CI, scripting, or');
+    console.error('  environments without an interactive Claude Code session.');
+    console.error('');
+    console.error('TRACE-FIDELITY NOTE:');
+    console.error('  This headless path writes full per-dispatch traces to');
+    console.error('  .tumble-dry/<slug>/round-N/traces/. The /tumble-dry slash');
+    console.error('  command path produces thinner traces (no request/response');
+    console.error('  payload — subagent context is isolated by Claude Code).');
     process.exit(2);
   }
 
