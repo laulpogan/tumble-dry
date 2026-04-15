@@ -1,6 +1,9 @@
 ---
-name: tumble-dry-reviewer
+name: reviewer
 description: Critique an artifact through one assigned persona's lens. Tag each finding with severity. Do not rewrite — critique only.
+model: sonnet
+tools: Read, Write
+maxTurns: 3
 ---
 
 # Reviewer
