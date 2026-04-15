@@ -37,6 +37,7 @@ const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggre
 const { dispatchWave, selectBackend } = require('../lib/dispatch.cjs');
 const { voiceDriftReport } = require('../lib/voice.cjs');
 const { extractPersonas } = require('../lib/reviewer-brief.cjs');
+const { pruneTraces } = require('../lib/trace-retention.cjs');
 
 function parseArgs(argv) {
   const out = { artifact: null, autoRedraft: true, panelSize: null };
@@ -94,16 +95,53 @@ async function runReviewerWave({ slug, roundN, roundDir, config }) {
   log(`round ${roundN} — ${briefs.length} critiques written`);
 }
 
-function aggregateAndCheck({ slug, roundN, roundDir, runDir, config }) {
+function aggregateAndCheck({ slug, roundN, roundDir, runDir, artifactAbs, config }) {
   const critiques = fs.readdirSync(roundDir)
     .filter(n => /^critique-.+\.md$/.test(n))
     .map(n => path.join(roundDir, n));
   const agg = aggregateRound(critiques, { runDir, currentRound: roundN });
   const rendered = renderAggregate(agg, config, roundN);
-  fs.writeFileSync(path.join(roundDir, 'aggregate.md'), rendered.markdown, 'utf-8');
-  fs.writeFileSync(path.join(roundDir, 'aggregate.json'), JSON.stringify(aggregateJson(agg), null, 2), 'utf-8');
-  log(`round ${roundN} aggregate — raw=${agg.total_raw} unique=${agg.unique_clusters} material=${agg.by_severity.material||0} minor=${agg.by_severity.minor||0} nit=${agg.by_severity.nit||0} structural=${agg.structural_count||0} converged=${rendered.converged}`);
-  return { agg, converged: rendered.converged };
+
+  // HARDEN-01: voice-drift gate. Cumulative content_drift from round-0
+  // original exceeding threshold BLOCKS convergence regardless of material
+  // count. Anti-reward-hack against editor suppressing findings by rewrite.
+  let drift_blocked = false;
+  let driftPayload = null;
+  const originalSnapshot = path.join(runDir, 'history', 'round-0-original.md');
+  if (fs.existsSync(originalSnapshot) && fs.existsSync(artifactAbs)) {
+    try {
+      const before = fs.readFileSync(originalSnapshot, 'utf-8');
+      const after = fs.readFileSync(artifactAbs, 'utf-8');
+      driftPayload = voiceDriftReport(before, after);
+      const threshold = Number.isFinite(config.drift_threshold) ? config.drift_threshold : 0.40;
+      if ((driftPayload.content_drift || 0) > threshold) {
+        drift_blocked = true;
+      }
+      log(`round ${roundN} drift — content=${driftPayload.content_drift} structural=${driftPayload.structural_drift} threshold=${threshold} blocked=${drift_blocked}`);
+    } catch (e) {
+      log(`round ${roundN} drift report skipped: ${e.message}`);
+    }
+  }
+
+  let converged = rendered.converged;
+  let renderedMd = rendered.markdown;
+  if (drift_blocked) {
+    converged = false;
+    const threshold = Number.isFinite(config.drift_threshold) ? config.drift_threshold : 0.40;
+    const block = `\n## ⚠ Drift block\n\nCumulative content-drift from round-0 original is **${driftPayload.content_drift}**, which exceeds the configured threshold of **${threshold}**. Convergence is BLOCKED regardless of material count — the editor has rewritten too much of the author's voice.\n\n**Structural drift** (markdown re-shape, heading reflow): ${driftPayload.structural_drift} — informational only, does not gate.\n\n**Persona reviewers, round ${roundN + 1}:** the editor is drifting. In your next critique, explicitly preserve source phrasing where the critique's intent can be satisfied with lighter edits. Flag any rewrite that replaces voice-carrying sentences wholesale as a material finding.\n`;
+    renderedMd = renderedMd + block;
+  }
+
+  fs.writeFileSync(path.join(roundDir, 'aggregate.md'), renderedMd, 'utf-8');
+  const jsonOut = aggregateJson(agg);
+  jsonOut.drift_blocked = drift_blocked;
+  if (driftPayload) {
+    jsonOut.content_drift = driftPayload.content_drift;
+    jsonOut.structural_drift = driftPayload.structural_drift;
+  }
+  fs.writeFileSync(path.join(roundDir, 'aggregate.json'), JSON.stringify(jsonOut, null, 2), 'utf-8');
+  log(`round ${roundN} aggregate — raw=${agg.total_raw} unique=${agg.unique_clusters} material=${agg.by_severity.material||0} minor=${agg.by_severity.minor||0} nit=${agg.by_severity.nit||0} structural=${agg.structural_count||0} drift_blocked=${drift_blocked} converged=${converged}`);
+  return { agg, converged, drift_blocked };
 }
 
 async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }) {
@@ -182,7 +220,10 @@ async function main() {
     if (!fs.existsSync(path.join(roundDir, 'aggregate.md'))) {
       await runReviewerWave({ slug, roundN, roundDir, config });
     }
-    const { converged } = aggregateAndCheck({ slug, roundN, roundDir, runDir, config });
+    const { converged } = aggregateAndCheck({ slug, roundN, roundDir, runDir, artifactAbs, config });
+
+    // HARDEN-05: trim older rounds' traces after aggregation.
+    try { pruneTraces(runDir, roundN, config); } catch (e) { log(`trace retention skipped: ${e.message}`); }
 
     if (converged) {
       log(`✓ converged at round ${roundN}`);
