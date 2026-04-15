@@ -1,6 +1,6 @@
 ---
 description: Polish content via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings. Runs in your active Claude Code session — no API key required.
-argument-hint: <filepath> [--audience "..."] [--panel-size N] [--no-auto-redraft]
+argument-hint: <filepath> [--audience "..."] [--panel-size N] [--no-auto-redraft] [--apply]
 ---
 
 # /tumble-dry
@@ -17,6 +17,15 @@ Four scenarios mirror `bin/tumble-dry-loop.cjs --help`:
 - **Polish a pitch deck (.pptx projected to markdown):** `/tumble-dry deck.pptx` — loader emits `ROUNDTRIP_WARNING.md`; FINAL.md ships as markdown; original `.pptx` preserved byte-for-byte at `.tumble-dry/<slug>/history/round-0-original.pptx`.
 - **Polish a code refactor PR (AST-aware drift, linter-clean assumption):** `/tumble-dry --panel-size 5 src/auth/` — detects code via `linguist-js`; editor swaps voice for PEP 8 / Effective Go / Rust API Guidelines / JS Standard; signature changes on public API are permanent `STRUCTURAL:` flags.
 - **Polish a spec doc with a verify command (.docx + pytest gate):** set `verify_cmd: "pytest tests/"` in `.tumble-dry.yml`, then `/tumble-dry spec.docx`. Redraft is rejected if `verify_cmd` exits non-zero; loop continues with prior state.
+
+## Roundtrip (opt-in, v0.7+)
+
+By default tumble-dry ships only `FINAL.md` — you re-apply changes to your `.docx`/`.pptx`/`.xlsx` source manually. Pass `--apply` to also regenerate the source binary alongside `FINAL.md` plus a `LOSSY_REPORT.md` describing what survived/was approximated/was dropped.
+
+- **Polish a docx and regenerate it:** `/tumble-dry spec.docx --apply` → produces `FINAL.md`, `FINAL.docx`, `LOSSY_REPORT.md`.
+- **PDF is explicitly NOT supported** — `--apply` on a `.pdf` source errors with a pointer to pandoc / weasyprint. Use those for markdown→PDF re-typesetting.
+
+The slash command surfaces `LOSSY_REPORT.md` to chat after finalize so you can read what was lost before shipping the regenerated file.
 
 ## Resolve plugin home
 
@@ -50,6 +59,7 @@ Parse `$ARGUMENTS` into:
 - `AUDIENCE_OVERRIDE` — value passed to `--audience` (default empty → use config).
 - `PANEL_SIZE` — value passed to `--panel-size` (default empty → config default).
 - `NO_AUTO_REDRAFT` — boolean flag from `--no-auto-redraft`.
+- `APPLY_ROUNDTRIP` — boolean flag from `--apply` (ROUNDTRIP-01). When set and the source format is `.docx`/`.pptx`/`.xlsx`, finalize regenerates the source binary alongside FINAL.md and writes `LOSSY_REPORT.md`. PDF errors with a pointer to pandoc/weasyprint.
 
 ## Initialize the run
 
@@ -247,15 +257,25 @@ CRITICAL (Pitfall 4 invariant): The orchestrator reads ONLY `aggregate.md` and `
 
 ```bash
 if [ "$CONVERGED" = "true" ]; then
-  node "$TD_HOME/bin/tumble-dry.cjs" finalize "$SLUG"
+  FINALIZE_ARGS=("$SLUG")
+  if [ "$APPLY_ROUNDTRIP" = "1" ]; then FINALIZE_ARGS+=("--apply"); fi
+  node "$TD_HOME/bin/tumble-dry.cjs" finalize "${FINALIZE_ARGS[@]}"
   echo "[tumble-dry-loop] ✓ converged at round $ROUND"
   echo "FINAL artifact: .tumble-dry/$SLUG/FINAL.md"
   echo "Polish log:    .tumble-dry/$SLUG/polish-log.md"
+  if [ "$APPLY_ROUNDTRIP" = "1" ] && [ -f ".tumble-dry/$SLUG/LOSSY_REPORT.md" ]; then
+    echo ""
+    echo "==================== LOSSY ROUNDTRIP REPORT ===================="
+    cat ".tumble-dry/$SLUG/LOSSY_REPORT.md"
+    echo "================================================================"
+  fi
   exit 0
 fi
 
 if [ "$ROUND" -ge "$MAX_ROUNDS" ]; then
-  node "$TD_HOME/bin/tumble-dry.cjs" finalize "$SLUG"
+  FINALIZE_ARGS=("$SLUG")
+  if [ "$APPLY_ROUNDTRIP" = "1" ]; then FINALIZE_ARGS+=("--apply"); fi
+  node "$TD_HOME/bin/tumble-dry.cjs" finalize "${FINALIZE_ARGS[@]}"
   echo "[tumble-dry-loop] ⚠ hit max_rounds without convergence — finalized current state"
   exit 1
 fi

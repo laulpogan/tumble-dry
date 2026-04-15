@@ -1,6 +1,6 @@
 {
   "name": "tumble-dry",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Polish written work AND code through simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor (prose) or style-anchored editor (code), AST-aware drift, converges on material findings.",
   "private": true,
   "type": "commonjs",
@@ -11,10 +11,11 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "node tests/harden.test.cjs && node tests/validate-plugin.test.cjs && node tests/format.test.cjs && node tests/code.test.cjs",
+    "test": "node tests/harden.test.cjs && node tests/validate-plugin.test.cjs && node tests/format.test.cjs && node tests/code.test.cjs && node tests/roundtrip.test.cjs",
     "test:harden": "node tests/harden.test.cjs",
     "test:format": "node tests/format.test.cjs",
     "test:code": "node tests/code.test.cjs",
+    "test:roundtrip": "node tests/roundtrip.test.cjs",
     "validate-plugin": "node bin/validate-plugin.cjs"
   },
   "optionalDependencies": {
@@ -24,6 +25,9 @@
     "unpdf": "^0.13.1",
     "web-tree-sitter": "^0.25.0",
     "linguist-js": "^2.7.0",
-    "tree-sitter-javascript": "^0.23.0"
+    "tree-sitter-javascript": "^0.23.0",
+    "docx": "^9.0.0",
+    "pptxgenjs": "^3.12.0",
+    "exceljs": "^4.4.0"
   }
 }

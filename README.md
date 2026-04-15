@@ -123,6 +123,31 @@ All loaders return a typed result: `{ ok:true, markdown, format, warnings[] }` o
 
 Encoding invariants (FORMAT-07): UTF-8 default, BOM stripped on read, CJK / RTL / curly-quote / emoji preserved through the projection.
 
+## Roundtrip
+
+**Default behavior unchanged:** tumble-dry produces `FINAL.md` and you re-apply changes to your `.docx` / `.pptx` / `.xlsx` source manually. As of v0.7.0 you can opt into automatic regeneration with `--apply` (slash command) or `--write-final` (headless CLI):
+
+```bash
+/tumble-dry deck.pptx --apply
+node bin/tumble-dry-loop.cjs spec.docx --write-final
+```
+
+When set, finalize writes `FINAL.<ext>` next to `FINAL.md` and a `LOSSY_REPORT.md` describing what survived, what was approximated, and what was dropped. The slash command surfaces the report to chat after finalize.
+
+**What's preserved/dropped per format:**
+
+- **`.docx`** (via `docx@^9`): preserves headings H1-H6, paragraphs, ordered + unordered lists, simple markdown pipe tables, inline emphasis (bold/italic/inline code rendered as Courier New), block quotes (indented paragraphs). Drops images, embedded objects, comments, track-changes, custom styles, footnotes, headers/footers, page numbers, section breaks.
+- **`.pptx`** (via `pptxgenjs@^3`): preserves slide count from `<!-- slide:N -->` markers, slide titles from H2, body bullets, and speaker notes from `<!-- notes: ... -->` markers. Drops original templates, slide masters, theme colors, animations, transitions, embedded media, charts, custom shapes.
+- **`.xlsx`** (via `exceljs@^4` — NOT SheetJS, same CVE rationale as ingestion): preserves sheet count from `<!-- sheet:Name -->` markers, sheet names (truncated to Excel's 31-char cap), table dimensions, bold header rows, numeric vs string cell types (auto-detected; leading-zero strings preserved as strings to protect IDs / ZIP codes). Drops formulas (cells become literal values), pivot tables, charts, conditional formatting, data validation, named ranges, frozen panes, merged cells, cell styles beyond bold header, macros.
+
+**PDF roundtrip is explicitly NOT supported.** Passing `--apply` on a `.pdf` source errors:
+
+> PDF roundtrip is not supported. FINAL.md is your polished output — re-typeset with pandoc / weasyprint / your preferred markdown→PDF tool. See README §Roundtrip for rationale.
+
+Markdown→PDF is a different rendering problem with multiple acceptable third-party tools (pandoc, weasyprint, typst). FINAL.md is still produced; only the writer step exits non-zero (exit 4).
+
+See `LOSSY_REPORT.md` in your run dir (`.tumble-dry/<slug>/`) for the per-run breakdown of what was preserved, approximated, and lost.
+
 ## Code mode
 
 Point tumble-dry at a source file or a code directory:
@@ -335,7 +360,7 @@ See [`examples/dogfood-2026-04-14/`](examples/dogfood-2026-04-14/) for a complet
 
 ## Status
 
-**v0.6.0 (current — 2026-04-15).** Ship-ready. Prose, office formats, code, and decks all supported. See [CHANGELOG.md](CHANGELOG.md) for the phase-by-phase history.
+**v0.7.0 (current — 2026-04-15).** Ship-ready. Prose, office formats, code, and decks all supported. Opt-in office-format roundtrip via `--apply` / `--write-final`. See [CHANGELOG.md](CHANGELOG.md) for the phase-by-phase history.
 
 ## Roadmap
 

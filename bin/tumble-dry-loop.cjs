@@ -40,13 +40,14 @@ const { extractPersonas } = require('../lib/reviewer-brief.cjs');
 const { pruneTraces } = require('../lib/trace-retention.cjs');
 
 function parseArgs(argv) {
-  const out = { artifact: null, autoRedraft: true, panelSize: null };
+  const out = { artifact: null, autoRedraft: true, panelSize: null, writeFinal: false };
   let i = 0;
   while (i < argv.length) {
     const a = argv[i];
     if (a === '--auto-redraft') { out.autoRedraft = true; i++; }
     else if (a === '--no-auto-redraft') { out.autoRedraft = false; i++; }
     else if (a === '--panel-size') { out.panelSize = parseInt(argv[++i], 10); i++; }
+    else if (a === '--write-final') { out.writeFinal = true; i++; }
     else if (!out.artifact) { out.artifact = a; i++; }
     else i++;
   }
@@ -264,7 +265,7 @@ async function main() {
     console.error('tumble-dry-loop — headless convergence loop driver (v0.6.0)');
     console.error('');
     console.error('USAGE:');
-    console.error('  tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft]');
+    console.error('  tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft] [--write-final]');
     console.error('');
     console.error('REQUIRES:');
     console.error('  ANTHROPIC_API_KEY (env var or ~/.anthropic/api_key)');
@@ -335,14 +336,14 @@ async function main() {
 
     if (converged) {
       log(`✓ converged at round ${roundN}`);
-      runCli(['finalize', slug]);
+      runCli(['finalize', slug, ...(args.writeFinal ? ['--apply'] : [])]);
       log(`FINAL.md + polish-log.md written to ${runDir}`);
       return 0;
     }
 
     if (roundN >= config.max_rounds) {
       log(`⚠ hit max_rounds (${config.max_rounds}) without convergence — finalizing current state`);
-      runCli(['finalize', slug]);
+      runCli(['finalize', slug, ...(args.writeFinal ? ['--apply'] : [])]);
       return 1;
     }
 

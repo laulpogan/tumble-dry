@@ -413,8 +413,12 @@ switch (cmd) {
     break;
   }
   case 'finalize': {
-    const slug = argv[1];
-    if (!slug) die('usage: finalize <slug>');
+    // Accept positional slug + optional --apply flag (ROUNDTRIP-01).
+    const positionals = argv.slice(1).filter(a => !a.startsWith('--'));
+    const flags = argv.slice(1).filter(a => a.startsWith('--'));
+    const slug = positionals[0];
+    const applyRoundtrip = flags.includes('--apply');
+    if (!slug) die('usage: finalize <slug> [--apply]');
     const runDir = findRunDir(slug);
     const artifactPath = fs.readFileSync(path.join(runDir, 'artifact.path'), 'utf-8').trim();
     const sourcePathFile = path.join(runDir, 'source.path');
@@ -454,8 +458,69 @@ switch (cmd) {
       }
       logLines.push('');
     }
+    // Write the base polish log up front so --apply branch can append to it.
     fs.writeFileSync(path.join(runDir, 'polish-log.md'), logLines.join('\n'), 'utf-8');
-    console.log(JSON.stringify({ final: finalPath, polish_log: path.join(runDir, 'polish-log.md') }, null, 2));
+    // ROUNDTRIP-01: optional --apply flag regenerates source binary from FINAL.md.
+    let roundtripOut = null;
+    if (applyRoundtrip) {
+      const fmtPath = path.join(runDir, 'source-format.json');
+      let srcFmt = null;
+      if (fs.existsSync(fmtPath)) {
+        try { srcFmt = JSON.parse(fs.readFileSync(fmtPath, 'utf-8')); } catch { /* ignore */ }
+      }
+      const format = srcFmt && srcFmt.format;
+      if (!format || ['markdown', 'txt'].includes(format)) {
+        // Source already markdown — nothing to roundtrip.
+        roundtripOut = { skipped: true, reason: 'source_is_markdown', format: format || 'unknown' };
+      } else {
+        const { writeFinal } = require('../lib/writers/index.cjs');
+        const { writeReport } = require('../lib/writers/lossy-report.cjs');
+        const finalMd = fs.readFileSync(finalPath, 'utf-8');
+        // Resolve in IIFE to keep switch sync; the writer is async.
+        (async () => {
+          const result = await writeFinal(format, finalMd, srcFmt, finalPath);
+          if (result.ok) {
+            const reportPath = writeReport(runDir, {
+              format,
+              sourcePath: sourcePath,
+              finalPath,
+              regenPath: result.path,
+              lossy: result.lossy_notes || {},
+            });
+            // Append to polish-log.md
+            const extra = [
+              '',
+              '## Roundtrip',
+              '',
+              `- **Regenerated:** \`${result.path}\``,
+              `- **Lossy report:** \`${reportPath}\``,
+              '',
+            ].join('\n');
+            fs.appendFileSync(path.join(runDir, 'polish-log.md'), extra, 'utf-8');
+            console.log(JSON.stringify({
+              final: finalPath,
+              polish_log: path.join(runDir, 'polish-log.md'),
+              roundtrip: { ok: true, path: result.path, lossy_report: reportPath, format },
+            }, null, 2));
+            process.exit(0);
+          } else {
+            // PDF guard rail or writer failure (ROUNDTRIP-06).
+            console.error(`tumble-dry: roundtrip failed (${result.reason}): ${result.detail}`);
+            console.log(JSON.stringify({
+              final: finalPath,
+              polish_log: path.join(runDir, 'polish-log.md'),
+              roundtrip: { ok: false, reason: result.reason, detail: result.detail, format },
+            }, null, 2));
+            // Exit 4 on PDF, 5 on other writer errors. FINAL.md still produced above.
+            process.exit(result.reason === 'pdf_unsupported' ? 4 : 5);
+          }
+        })().catch(e => { console.error(e.stack || e.message); process.exit(2); });
+        break;
+      }
+    }
+    const out = { final: finalPath, polish_log: path.join(runDir, 'polish-log.md') };
+    if (roundtripOut) out.roundtrip = roundtripOut;
+    console.log(JSON.stringify(out, null, 2));
     break;
   }
   default:

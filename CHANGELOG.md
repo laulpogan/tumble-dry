@@ -2,6 +2,32 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [0.7.0] — 2026-04-15 — Opt-in office-format roundtrip
+
+**Theme:** Regenerate `.docx` / `.pptx` / `.xlsx` from `FINAL.md` alongside the markdown when you opt in with `--apply` (slash) / `--write-final` (CLI). PDF explicitly errors with a pointer to pandoc/weasyprint. Roundtrip is honestly lossy — `LOSSY_REPORT.md` per run tells you what survived, what was approximated, and what was dropped. Default behavior unchanged.
+
+### Added
+
+- **`lib/writers/docx.cjs` (ROUNDTRIP-02)** — markdown → DOCX via `docx@^9`. Preserves H1-H6, paragraphs, ordered/unordered lists, GFM-ish pipe tables, inline emphasis (bold/italic/inline code as Courier New), block quotes (indented). Strips boundary-marker HTML comments silently.
+- **`lib/writers/pptx.cjs` (ROUNDTRIP-03)** — markdown → PPTX via `pptxgenjs@^3`. Splits on `<!-- slide:N -->` markers. H2 per slide → title box; remaining lines → bulleted body. Speaker notes preserved from `<!-- notes: ... -->` markers.
+- **`lib/writers/xlsx.cjs` (ROUNDTRIP-04)** — markdown → XLSX via `exceljs@^4` (NOT SheetJS — CVE rationale matches ingestion). Splits on `<!-- sheet:Name -->` markers. Bold header row; numeric coercion that preserves leading zeros. Sheet names truncated to Excel's 31-char cap.
+- **`lib/writers/lossy-report.cjs` (ROUNDTRIP-05)** — assembles `LOSSY_REPORT.md` with `## Survived`, `## Approximated`, `## Dropped` sections from per-writer `lossy_notes`.
+- **`lib/writers/index.cjs` (ROUNDTRIP-06)** — dispatcher routing by source format. PDF returns `{ok:false, reason:'pdf_unsupported'}` with the documented actionable message.
+- **`bin/tumble-dry.cjs::finalize --apply`** — when set, reads `source-format.json`, dispatches to the writer, writes `FINAL.<ext>` next to `FINAL.md`, writes `LOSSY_REPORT.md`, and appends a `## Roundtrip` section to `polish-log.md`. Exit 4 on PDF guard rail; exit 5 on writer failure; exit 0 on success or when source is markdown (no-op skip).
+- **`bin/tumble-dry-loop.cjs --write-final`** — passthrough flag to finalize.
+- **`commands/tumble-dry.md --apply`** — slash command parses the flag, propagates to finalize, surfaces `LOSSY_REPORT.md` to chat after success.
+- **`tests/roundtrip.test.cjs`** — 17 smoke tests covering docx/pptx/xlsx round-trip via real libs (mammoth, officeparser, exceljs), the lossy-report assembler, the PDF guard rail (unit + integration through finalize), and dispatcher routing.
+
+### Dependencies
+
+- New `optionalDependencies`: `docx@^9`, `pptxgenjs@^3`, `exceljs@^4`. Markdown-only users still skip `npm install`.
+
+### Out of scope
+
+- PDF roundtrip — markdown→PDF is a different rendering problem with multiple acceptable tools (pandoc, weasyprint, typst).
+- Lossless roundtrip — not achievable from a markdown projection.
+- Roundtrip as default — `--apply` is opt-in.
+
 ## [0.6.0] — 2026-04-15 — Code-aware mode + release close
 
 **Theme:** Ship v0.6.0. Code polish becomes a first-class artifact family alongside prose, office formats, and decks.
@@ -106,6 +132,7 @@ All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https:/
 
 ---
 
+[0.7.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.7.0
 [0.6.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.6.0
 [0.5.2]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.5.2
 [0.5.1]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.5.1
