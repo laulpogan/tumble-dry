@@ -1,6 +1,6 @@
 {
   "name": "tumble-dry",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Polish written work and code through simulated public contact — parallel reviewer personas, assumption audit, voice- or style-anchored editor, AST-aware drift for code.",
   "author": { "name": "Paul Logan" },
   "homepage": "https://github.com/laulpogan/tumble-dry",

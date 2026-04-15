@@ -317,3 +317,66 @@ Don't defer format detection to read-time. Normalize to markdown at `init` time 
 - [Claude Code Sub-Agents: Parallel vs Sequential Patterns](https://claudefa.st/blog/guide/agents/sub-agent-best-practices)
 - [fan-out-audit reference implementation](https://github.com/lachiejames/fan-out-audit)
 - Internal: PROJECT.md, bin/tumble-dry-loop.cjs, commands/tumble-dry.md, lib/dispatch.cjs, lib/run-state.cjs, agents/reviewer.md, README.md
+
+---
+
+## Addendum 2026-04-15: orchestrator-in-subagent reversal (Phase 8 / v0.8.0)
+
+### Original decision (Section 1, Q1)
+
+Phase 1 concluded: "slash command IS the orchestrator (NOT a subagent)." Rationale was main-session visibility — every Task dispatch observable, every critique ingestible, every decision traceable in one place. Pitfall-1 (false convergence on partial rounds) was argued to be mitigable with filesystem IPC + reconciliation.
+
+### What the dogfood proved
+
+Running tumble-dry on its own README + planning docs showed a different failure mode: **main-session token flooding**. A typical 5-reviewer round at 2-3KB of critique body per reviewer drags 12-15KB into the orchestrator's context. After 3 rounds that's ~50KB of raw critique prose plus aggregates plus redrafts plus briefs. For a 17-file batch at the PM's asking cadence, the main session would burn 400KB+ of context per run — context the user doesn't read and that evicts the actual conversation they care about.
+
+The Pitfall-1 mitigation that made the slash-command-as-orchestrator design work also made it expensive: because the orchestrator is the only consumer of `aggregate.md` (never raw critiques), it still has to pull those aggregates + diffs + redraft excerpts into main-session memory. At N reviewers × R rounds × F files, cost compounds multiplicatively.
+
+### New decision
+
+The orchestration **loop** lives in its own subagent context (`agents/orchestrator.md`). The slash command becomes a dispatch-and-poll wrapper. Main session sees:
+
+```
+[tumble-dry] dispatched orchestrator → polling…
+[tumble-dry] round 1 — reviewers 5/5 returned
+[tumble-dry] round 1 — material=3 minor=7 drift=0.12
+[tumble-dry] round 2 — reviewers 5/5 returned
+[tumble-dry] round 2 — CONVERGED (material=1, drift=0.18)
+[tumble-dry] wrote REPORT.md
+```
+
+Plus, on convergence, the final `REPORT.md` cat'd into chat — a capped ~5KB document.
+
+### What limited the ideal design
+
+Plan 01 confirmed empirically: Claude Code plugin-shipped subagents have `Task` stripped from their tool set at load time (documented in STACK.md and verified by the loader). The orchestrator **cannot fan out reviewer Task calls itself** — that would require sub-subagent dispatch, which the loader explicitly forbids.
+
+**Pragmatic compromise:** the orchestrator is a "dispatch-plan emitter" rather than a true single-process orchestrator. It:
+
+1. Runs all deterministic data-plane work (init, briefs, aggregate, drift, finalize) via `Bash` + `bin/tumble-dry.cjs`
+2. Writes `status.json` + per-round `REPORT.md` to disk at every phase boundary
+3. Writes `dispatch-plan.json` describing the next wave of Task calls the caller needs to make
+4. Returns control to the slash command, which reads `dispatch-plan.json` and emits the Task fanout in ONE assistant turn (so reviewers still parallelize)
+
+The slash command becomes a mechanical loop: poll orchestrator → read dispatch-plan → fanout → loop. Every line is mechanical, not a prose brief.
+
+### What this preserves
+
+- **Non-destructive invariant** — unchanged.
+- **Filesystem IPC** — unchanged and strengthened (now includes `status.json`, `REPORT.md`, `dispatch-plan.json`).
+- **Parallel reviewer dispatch** — unchanged (still fanned out in one assistant turn from main session).
+- **Headless CLI path** — unaffected; `bin/tumble-dry-loop.cjs` uses the Anthropic SDK directly and can run the whole loop in one process.
+- **Pitfall-1 mitigation** — unchanged (glob reconciliation still applies).
+
+### What this changes in code (v0.8.0)
+
+- `commands/tumble-dry.md` shrinks from 307 → ~120 lines. Body is: parse args → init → invoke orchestrator → poll → when orchestrator emits a reviewer/editor dispatch plan, fan out → repeat → cat REPORT.md.
+- `agents/orchestrator.md` added (new) — runs the convergence loop as a long-lived subagent (maxTurns: 50), emits status + dispatch plans.
+- `lib/status.cjs`, `lib/report.cjs` added — filesystem-IPC plumbing.
+- `lib/run-state.cjs::initBatch` added — batch directory layout.
+- `bin/tumble-dry.cjs` new subcommands: `init-batch`, `expand`, `status`, `resume`, `dry-run`, `report`, `status-write`, `status-render`, `canary-infer`, `config init`.
+- `lib/pricing.cjs`, `lib/canary.cjs`, `lib/glob-expand.cjs` added for DRYRUN/CANARY/BATCH.
+
+### Honest record
+
+Phase 1's decision wasn't wrong on first principles — just wrong for this workload at real scale. Main-session visibility is a virtue when you're shipping one artifact at a time and reading every finding. It's a cost center when you're shipping a 17-file batch and want a single REPORT.md at the end. Both designs exist in git; v0.8.0's CHANGELOG explicitly labels the pivot so future maintainers don't re-litigate it.

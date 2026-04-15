@@ -4,7 +4,53 @@
 
 Works across four artifact families: **prose** (blog posts, essays, memos, ad copy, landing pages), **office formats** (.docx, .pptx, .xlsx, .pdf — projected to markdown for review), **code** (source files and directories — AST-aware drift, language-specific style anchors, `verify_cmd` gate), and **decks** (markdown decks natively; .pptx via the office-format loader).
 
-> **What's new in v0.6.0 (2026-04-15):** Code-aware mode ships. `linguist-js` detects the language; `web-tree-sitter` (WASM, not native — Windows + ARM safe) builds an AST-aware drift report with per-symbol taxonomy (unchanged / renamed / moved / modified / **signature_changed** / added / removed / reformatted). Editor swaps voice excerpts for PEP 8 / Effective Go / Rust API Guidelines / JS Standard. A `verify_cmd` config knob gates the redraft against your tests before it's applied. Release also closes out v0.5.0 (Claude Code-native `/tumble-dry` slash command — no `ANTHROPIC_API_KEY` required), v0.5.1 (persona library — 40 artifact types across 4 families), v0.5.2 (office-format ingestion via `mammoth`+`turndown`+`officeparser`+`unpdf`), and cross-cutting core hardening (drift-gate blocks convergence, bigram-Dice dedup, round-N brief seeding with unresolved clusters, trace retention, `.gitignore` bootstrap). See [CHANGELOG.md](CHANGELOG.md) for the full v0.4.2 → v0.6.0 history.
+> **What's new in v0.8.0 (2026-04-15):** UX rebuild. The convergence loop now runs inside a headless `orchestrator` subagent, not your main session — you see one progress line per round plus a final `REPORT.md`, not a 400KB critique flood. **Batch input is native** (`/tumble-dry "site/copy/*.md"` or `/tumble-dry docs/` polishes every file). **`--dry-run`** previews the inferred panel + cost estimate before committing to N reviewer waves. **`status` / `resume`** rescue orphaned runs. **Zero-config first run** works without `.tumble-dry.yml` — voice refs are inferred from your git history. `/tumble-dry` is registered as a discoverable Skill so other agents can chain it via `Skill(skill="tumble-dry", ...)`. See [CHANGELOG.md](CHANGELOG.md) for the full v0.4.2 → v0.8.0 history.
+
+## Quickstart (v0.8.0)
+
+Install the plugin (see [Install](#install) below for all options), then in any Claude Code session:
+
+```
+/tumble-dry post.md            # single file
+/tumble-dry "site/copy/*.md"   # glob — polishes every match as a batch
+/tumble-dry docs/              # directory — recursive walk, markdown + code filtered
+```
+
+On first run in a fresh repo with no `.tumble-dry.yml`, voice refs are inferred from your recent prose commits. You'll see:
+
+```
+[tumble-dry] first run — using inferred defaults: voice_refs=git_history(N=5 commits, K=3 excerpts)
+[tumble-dry] dispatched orchestrator (kind=single slug=post) → polling…
+[tumble-dry] round 1 — reviewers 5/5 returned
+[tumble-dry] round 1 — aggregate (material=2 minor=4 drift=0.12)
+[tumble-dry] round 2 — reviewers 5/5 returned
+[tumble-dry] round 2 — CONVERGED (material=0, drift=0.18)
+=================== REPORT ===================
+# tumble-dry Report — post
+Converged at round 2 after 2 round(s).
+...
+```
+
+Preview cost before running:
+
+```
+/tumble-dry post.md --dry-run
+# prints panel + assumption-audit summary + ## Estimated cost block, then exits
+```
+
+Killed a run mid-round? Pick it up:
+
+```
+/tumble-dry status                         # list runs, flag orphans
+/tumble-dry resume site-copy-20260415-1430 # resume from where it stopped
+```
+
+Dump the inferred config for editing:
+
+```
+node ~/Source/tumble-dry/bin/tumble-dry.cjs config init
+# writes .tumble-dry.yml with panel_size, convergence_threshold, drift_threshold, max_rounds
+```
 
 ---
 

@@ -2,6 +2,51 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [0.8.0] — 2026-04-15 — UX rebuild: headless orchestrator + batch + dry-run + status/resume + canary
+
+**Theme:** First-run cliff removed. Main-session token flooding eliminated. Batch input native. Architectural reversal of Phase 1's "slash-command-is-orchestrator" decision — see `.planning/research/ARCHITECTURE.md` addendum for the dogfood evidence.
+
+### Added
+
+- **`agents/orchestrator.md` (HEADLESS-01)** — headless convergence-loop orchestrator subagent (`model: claude-opus-4-6`, `maxTurns: 50`). Runs init, briefs, aggregate, drift, finalize in its own context. Emits `status.json` + `dispatch-plan.json` at every phase boundary. Does NOT spawn sub-subagents (Claude Code strips `Task` from plugin-shipped agents at load time) — returns dispatch plans for the slash command to fan out.
+- **`lib/status.cjs` (HEADLESS-02)** — `status.json` writer with schema `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta_rounds, last_updated}`. `isOrphan` helper flags runs with stale updates (>1 hour). `renderProgressLine` produces single-line progress for the slash command to echo.
+- **`lib/report.cjs` (HEADLESS-03)** — per-round `REPORT.md` writer (1-paragraph summary + top-3 material findings + drift snapshot) and final roll-up `REPORT.md` with per-round table.
+- **`lib/run-state.cjs::initBatch` (BATCH-05)** — batch layout at `.tumble-dry/<batch-slug>/<file-slug>/` where `<batch-slug>` derives from common parent dir + timestamp.
+- **`lib/glob-expand.cjs` (BATCH-01)** — zero-dep glob + directory expansion. Skips `node_modules`, `.git`, `.tumble-dry`. Supports `*`, `**`, `?`, `{a,b}`.
+- **`lib/pricing.cjs` (DRYRUN-01)** — built-in price table (opus 15/75, sonnet 3/15, haiku 1/5 USD per M tokens) + cost estimator (reviewer wave + editor + round-1 extras).
+- **`lib/canary.cjs` (CANARY-01/02)** — zero-config first-run voice inference. Greps `git log --author "$(git config user.name)"` for prose-heavy files, samples added lines from 5 recent commits. Falls back to source-self-sampling when git unavailable. 1-day cache at `.tumble-dry/_canary-voice.json`.
+- **`bin/tumble-dry.cjs` new subcommands:**
+  - `init-batch <paths|globs|dirs>` — init a batch run.
+  - `expand <paths|globs>` — resolve inputs to concrete file list (utility for slash command).
+  - `status` — walk `.tumble-dry/`, print table of runs. Exit 1 if any are unconverged/orphaned (STATUS-01).
+  - `resume <slug>` — emit resume plan JSON (STATUS-02).
+  - `dry-run <artifact>` — init + cost-estimate block + exit, no reviewer dispatch (DRYRUN-01).
+  - `report <slug> round|final` — write per-round or final REPORT.md.
+  - `status-write <slug> key=value ...` — orchestrator patches status.json.
+  - `status-render <slug>` — slash command prints the one-line progress.
+  - `canary-infer` — surface inferred defaults as JSON (CANARY-01).
+  - `config init` — dump inferred config to `.tumble-dry.yml` for editing (CANARY-02).
+- **`.claude-plugin/marketplace.json`** — registers `orchestrator` agent + `tumble-dry` Skill entry with `description` + `argument-hint` (SKILL-01/02).
+- **`commands/tumble-dry.md`** — rewritten: 307 → ~115 lines. Parses args, dispatches orchestrator, polls `status.json` between waves, fans out reviewer/editor Task calls per dispatch plan, cats `REPORT.md` at convergence.
+
+### Architecture reversal
+
+Phase 1's ARCHITECTURE.md declared "slash command IS the orchestrator." Real PM dogfood on tumble-dry's own docs showed main-session token flooding (400KB+ per multi-round run) that nobody actually reads. New design: orchestrator lives in its own subagent context; main session sees only status lines + final REPORT.md. `ARCHITECTURE.md` addendum dated 2026-04-15 documents the reversal with evidence (REVERSAL-01).
+
+### Tests
+
+- `tests/headless.test.cjs` — 10 tests: orchestrator agent frontmatter + marketplace registration, Skill registration, status.json schema, orphan detection, progress line rendering, per-round + final REPORT.md generation.
+- `tests/batch.test.cjs` — 9 tests: glob regex, directory expansion, dedup, skip-dirs, initBatch per-file subdirs + batch slug derivation.
+- `tests/canary.test.cjs` — 7 tests: git-history voice inference, prose-commit-free fallback, non-git fallback, cache, dumpConfigYaml.
+- `tests/dryrun.test.cjs` — 6 tests: price table, token heuristic, panel-size scaling, max-rounds cap, cost block rendering.
+- All prior test suites (code, format, harden, roundtrip, validate-plugin) still pass (58 tests green).
+
+### Out of scope (deferred)
+
+- **Per-file audience inference as default** — Batch runs share ONE inferred panel; `--per-file-audience` flag surfaces as reserved argument. Opt-in implementation deferred to v0.8.1.
+- **Cross-file dedup** — Each file's findings stay scoped.
+- **Subagent-spawn-subagent** — Documented constraint in Claude Code 2.1.63+; orchestrator emits dispatch plans instead.
+
 ## [0.7.0] — 2026-04-15 — Opt-in office-format roundtrip
 
 **Theme:** Regenerate `.docx` / `.pptx` / `.xlsx` from `FINAL.md` alongside the markdown when you opt in with `--apply` (slash) / `--write-final` (CLI). PDF explicitly errors with a pointer to pandoc/weasyprint. Roundtrip is honestly lossy — `LOSSY_REPORT.md` per run tells you what survived, what was approximated, and what was dropped. Default behavior unchanged.
