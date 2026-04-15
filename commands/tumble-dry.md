@@ -10,10 +10,10 @@ Run the full tumble-dry convergence loop on a content artifact (markdown doc, bl
 ## Resolve plugin home
 
 ```bash
-if [ -d "$HOME/.claude/plugins/tumble-dry/tumble-dry" ]; then
-  TD_HOME="$HOME/.claude/plugins/tumble-dry/tumble-dry"
-elif [ -d "$HOME/Source/tumble-dry/tumble-dry" ]; then
-  TD_HOME="$HOME/Source/tumble-dry/tumble-dry"
+if [ -d "$HOME/.claude/plugins/tumble-dry" ]; then
+  TD_HOME="$HOME/.claude/plugins/tumble-dry"
+elif [ -d "$HOME/Source/tumble-dry" ]; then
+  TD_HOME="$HOME/Source/tumble-dry"
 else
   echo "ERROR: tumble-dry plugin not found"; exit 2
 fi
