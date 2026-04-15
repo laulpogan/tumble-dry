@@ -21,12 +21,12 @@
 
 ### Persona Library (v0.5.1)
 
-- [ ] **PERSONA-01** `personas/library.md` ships covering ≥30 artifact types across 4 families (business/finance, product/engineering, marketing/comms, domain-specific). Each persona has **mandatory fields**: name, role, 1-2 sentence bio, **hiring job**, **bounce trigger**, **one load-bearing belief**. Default panels MUST pair believers with skeptics (anti-mode-collapse — Pitfall 16).
-- [ ] **PERSONA-02** `personas/runbook.md` tells the audience-inferrer: how to detect artifact type, which panel to pick from the library, how to mix/match across families, when to add the layman + when to add the operator. Includes the structural-vs-surface failure-mode index per artifact type.
-- [ ] **PERSONA-03** `personas/configs.json` declares per-artifact-type defaults (panel_size, convergence_threshold, editor_thinking_budget, max_rounds, **drift_threshold** — code mode stricter) — derived from the research files.
-- [ ] **PERSONA-04** `agents/audience-inferrer.md` reads the library + runbook + configs at build-brief time (or has them inlined). Does NOT duplicate the full library — references it.
-- [ ] **PERSONA-05** Library incorporates the structural-vs-surface design rule: every artifact type lists known structural failure modes (premise problems editor rewrites can't fix) sourced from the research markdown.
-- [ ] **PERSONA-06** Code-review persona section in the library (staff eng, security, on-call SRE, new-hire-in-6-months, hostile-fork reviewer) — derived from research/product-engineering.md. Each persona's bounce trigger excludes "linter-catchable issues."
+- [x] **PERSONA-01** `personas/library.md` ships covering ≥30 artifact types across 4 families (business/finance, product/engineering, marketing/comms, domain-specific). Each persona has **mandatory fields**: name, role, 1-2 sentence bio, **hiring job**, **bounce trigger**, **one load-bearing belief**. Default panels MUST pair believers with skeptics (anti-mode-collapse — Pitfall 16).
+- [x] **PERSONA-02** `personas/runbook.md` tells the audience-inferrer: how to detect artifact type, which panel to pick from the library, how to mix/match across families, when to add the layman + when to add the operator. Includes the structural-vs-surface failure-mode index per artifact type.
+- [x] **PERSONA-03** `personas/configs.json` declares per-artifact-type defaults (panel_size, convergence_threshold, editor_thinking_budget, max_rounds, **drift_threshold** — code mode stricter) — derived from the research files.
+- [x] **PERSONA-04** `agents/audience-inferrer.md` reads the library + runbook + configs at build-brief time (or has them inlined). Does NOT duplicate the full library — references it.
+- [x] **PERSONA-05** Library incorporates the structural-vs-surface design rule: every artifact type lists known structural failure modes (premise problems editor rewrites can't fix) sourced from the research markdown.
+- [x] **PERSONA-06** Code-review persona section in the library (staff eng, security, on-call SRE, new-hire-in-6-months, hostile-fork reviewer) — derived from research/product-engineering.md. Each persona's bounce trigger excludes "linter-catchable issues."
 
 ### Office Format Ingestion (v0.5.2)
 
@@ -97,12 +97,12 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 | DISPATCH-06 | Phase 1 — DISPATCH (v0.5.0) | Pending |
 | DISPATCH-07 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | DISPATCH-08 | Phase 1 — DISPATCH (v0.5.0) | Complete |
-| PERSONA-01 | Phase 2 — PERSONA (v0.5.1) | Pending |
-| PERSONA-02 | Phase 2 — PERSONA (v0.5.1) | Pending |
-| PERSONA-03 | Phase 2 — PERSONA (v0.5.1) | Pending |
-| PERSONA-04 | Phase 2 — PERSONA (v0.5.1) | Pending |
-| PERSONA-05 | Phase 2 — PERSONA (v0.5.1) | Pending |
-| PERSONA-06 | Phase 2 — PERSONA (v0.5.1) | Pending |
+| PERSONA-01 | Phase 2 — PERSONA (v0.5.1) | Complete |
+| PERSONA-02 | Phase 2 — PERSONA (v0.5.1) | Complete |
+| PERSONA-03 | Phase 2 — PERSONA (v0.5.1) | Complete |
+| PERSONA-04 | Phase 2 — PERSONA (v0.5.1) | Complete |
+| PERSONA-05 | Phase 2 — PERSONA (v0.5.1) | Complete |
+| PERSONA-06 | Phase 2 — PERSONA (v0.5.1) | Complete |
 | HARDEN-01 | Phase 3 — CORE-HARDEN | Pending |
 | HARDEN-02 | Phase 3 — CORE-HARDEN | Pending |
 | HARDEN-03 | Phase 3 — CORE-HARDEN | Pending |
