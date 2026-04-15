@@ -11,7 +11,7 @@
 ### Dispatch — Claude Code-native (v0.5.0)
 
 - [ ] **DISPATCH-01** Slash command `/tumble-dry <artifact>` runs the full convergence loop using only the user's active Claude Code session — no `ANTHROPIC_API_KEY` required, no separate process.
-- [ ] **DISPATCH-02** Each agent (audience-inferrer, assumption-auditor, reviewer × N personas, editor) is dispatched as a parallel `Task` (aliased to `Agent` in CC v2.1.63+) call. **All N reviewer Task calls in ONE assistant turn — serial cross-turn dispatch is the #1 silent bug** (false convergence on partial rounds). `bin/validate-plugin.cjs` cross-checks `agents/*.md` frontmatter `name` against `.claude-plugin/marketplace.json` and is CI-gated.
+- [x] **DISPATCH-02** Each agent (audience-inferrer, assumption-auditor, reviewer × N personas, editor) is dispatched as a parallel `Task` (aliased to `Agent` in CC v2.1.63+) call. **All N reviewer Task calls in ONE assistant turn — serial cross-turn dispatch is the #1 silent bug** (false convergence on partial rounds). `bin/validate-plugin.cjs` cross-checks `agents/*.md` frontmatter `name` against `.claude-plugin/marketplace.json` and is CI-gated.
 - [ ] **DISPATCH-03** `agents/*.md` frontmatter conforms to current Claude Code plugin-shipped subagent spec: `name` (no `tumble-dry-` prefix — that was wrong), `description`, `tools`, optional `model`/`disallowedTools`/`maxTurns`/`color`. **Plugin-shipped agents cannot use `hooks`, `mcpServers`, or `permissionMode`** — silently stripped by the loader.
 - [ ] **DISPATCH-04** Plugin spec compliance: `marketplace.json` relocated to `.claude-plugin/marketplace.json`; new `.claude-plugin/plugin.json` manifest declares the plugin per current CC plugin docs. Verified via `claude plugin validate .` (or equivalent).
 - [ ] **DISPATCH-05** Loop orchestration lives in `commands/tumble-dry.md` as prose + bash + Task calls. The bash steps shell out to `bin/tumble-dry.cjs` for data-plane work (init, brief generation, aggregate, drift, finalize) — no LLM calls in bin/. **Filesystem is IPC**: subagents write to known paths from the brief; orchestrator reads `aggregate.md` (5–10KB) only, NOT raw critique files (otherwise context burns).
@@ -90,7 +90,7 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
 | DISPATCH-01 | Phase 1 — DISPATCH (v0.5.0) | Pending |
-| DISPATCH-02 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-02 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | DISPATCH-03 | Phase 1 — DISPATCH (v0.5.0) | Pending |
 | DISPATCH-04 | Phase 1 — DISPATCH (v0.5.0) | Pending |
 | DISPATCH-05 | Phase 1 — DISPATCH (v0.5.0) | Pending |

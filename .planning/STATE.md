@@ -1,3 +1,17 @@
+---
+gsd_state_version: 1.0
+milestone: v0.6.0
+milestone_name: close)
+status: Roadmap created; awaiting `/gsd-plan-phase 1`
+last_updated: "2026-04-15T21:40:38.628Z"
+progress:
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 4
+  percent: 0
+---
+
 # STATE — tumble-dry v0.5.x → v0.6.0
 
 ## Project Reference
@@ -13,7 +27,7 @@
 - **Phase:** Phase 1 — DISPATCH (v0.5.0) — not started
 - **Plan:** none yet
 - **Status:** Roadmap created; awaiting `/gsd-plan-phase 1`
-- **Progress:** 0/6 phases complete
+- **Progress:** [░░░░░░░░░░] 0%
 
 ```
 [          ] 0% (0/6)
@@ -57,7 +71,7 @@
 
 ## Session Continuity
 
-- **Last session:** 2026-04-15 — `/gsd-new-project` → `/gsd-research-project` → `/gsd-roadmapper`
+- **Last session:** 2026-04-15T21:40:38.624Z
 - **Next action:** `/gsd-plan-phase 1` to decompose DISPATCH into executable plans.
 
 ---
