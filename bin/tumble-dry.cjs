@@ -22,7 +22,11 @@ const path = require('path');
 const { loadConfig } = require('../lib/config.cjs');
 const { sampleExcerpts, getVoiceExcerpts, voiceDriftReport } = require('../lib/voice.cjs');
 const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggregator.cjs');
-const { initRun, roundDir, currentRound } = require('../lib/run-state.cjs');
+const { initRun, initBatch, roundDir, currentRound } = require('../lib/run-state.cjs');
+const { readStatus, writeStatus, initStatus, isOrphan, renderProgressLine } = require('../lib/status.cjs');
+const { writeRoundReport, writeFinalReport } = require('../lib/report.cjs');
+const { estimateRunCost, renderCostBlock } = require('../lib/pricing.cjs');
+const { inferDefaults, dumpConfigYaml } = require('../lib/canary.cjs');
 const { astDriftReport, parseCheck } = require('../lib/code/ast-drift.cjs');
 const {
   buildReviewerBrief,
@@ -252,10 +256,6 @@ switch (cmd) {
     }
     fs.writeFileSync(path.join(rDir, 'diff.md'), lines.join('\n'), 'utf-8');
     console.log(JSON.stringify({ round, ...report, diff_path: path.join(rDir, 'diff.md') }, null, 2));
-    break;
-  }
-  case 'config': {
-    console.log(JSON.stringify(loadConfig(cwd), null, 2));
     break;
   }
   case 'brief-audience': {
@@ -521,6 +521,231 @@ switch (cmd) {
     const out = { final: finalPath, polish_log: path.join(runDir, 'polish-log.md') };
     if (roundtripOut) out.roundtrip = roundtripOut;
     console.log(JSON.stringify(out, null, 2));
+    break;
+  }
+  case 'init-batch': {
+    // BATCH-01: init a batch run across N artifacts. Accepts paths, globs, or directories.
+    const inputs = argv.slice(1);
+    if (!inputs.length) die('usage: init-batch <path-or-glob> [<path-or-glob> ...]');
+    (async () => {
+      const { expandInputs } = require('../lib/glob-expand.cjs');
+      const resolved = expandInputs(cwd, inputs);
+      if (!resolved.length) die('no files matched inputs');
+      if (resolved.length === 1) {
+        // Single-file: preserve single-run back-compat
+        process.argv = ['node', 'tumble-dry.cjs', 'init', resolved[0]];
+        return runInit(resolved[0]);
+      }
+      try {
+        const batch = await initBatch(cwd, resolved);
+        initStatus(batch.batchDir, { kind: 'batch', slug: batch.batchSlug });
+        console.log(JSON.stringify({
+          kind: 'batch',
+          batch_slug: batch.batchSlug,
+          batch_dir: batch.batchDir,
+          files: batch.fileRuns.map(f => ({
+            slug: f.fileSlug,
+            run_dir: f.runDir,
+            artifact: f.artifactAbs,
+            source: f.sourceAbs,
+          })),
+        }, null, 2));
+      } catch (err) {
+        console.error(`tumble-dry: init-batch failed: ${err.message}`);
+        process.exit(1);
+      }
+    })().catch(e => { console.error(e.stack || e.message); process.exit(1); });
+    break;
+  }
+  case 'expand': {
+    // Utility for the slash command: resolves paths/globs/dirs to a JSON array.
+    const inputs = argv.slice(1);
+    if (!inputs.length) die('usage: expand <path-or-glob> [<path-or-glob> ...]');
+    const { expandInputs } = require('../lib/glob-expand.cjs');
+    const files = expandInputs(cwd, inputs);
+    console.log(JSON.stringify({ count: files.length, files }, null, 2));
+    break;
+  }
+  case 'status': {
+    // STATUS-01: list runs in .tumble-dry/
+    const root = path.join(cwd, '.tumble-dry');
+    if (!fs.existsSync(root)) {
+      console.log('no runs found');
+      process.exit(0);
+    }
+    const entries = fs.readdirSync(root, { withFileTypes: true })
+      .filter(e => e.isDirectory() && !e.name.startsWith('_'));
+    const rows = [];
+    let anyUnconverged = false;
+    for (const e of entries) {
+      const rd = path.join(root, e.name);
+      const st = readStatus(rd);
+      // Detect batch by presence of batch.json
+      const isBatch = fs.existsSync(path.join(rd, 'batch.json'));
+      if (isBatch && !st) {
+        rows.push({ slug: e.name, kind: 'batch', round: '-', converged: '-', material: '-', last_updated: '-', orphan: true });
+        anyUnconverged = true;
+        continue;
+      }
+      // Single: try to read latest aggregate.json
+      let material = '-';
+      let round = st ? st.round : 0;
+      if (!st) {
+        const rounds = fs.readdirSync(rd).filter(n => /^round-\d+$/.test(n)).map(n => parseInt(n.replace('round-', ''), 10)).sort((a, b) => a - b);
+        if (rounds.length) {
+          round = rounds[rounds.length - 1];
+          const aggPath = path.join(rd, `round-${round}`, 'aggregate.json');
+          if (fs.existsSync(aggPath)) {
+            try {
+              const agg = JSON.parse(fs.readFileSync(aggPath, 'utf-8'));
+              material = (agg.by_severity && agg.by_severity.material) || 0;
+            } catch { /* ignore */ }
+          }
+        }
+      } else {
+        material = st.material_count != null ? st.material_count : '-';
+      }
+      const converged = st ? (st.converged ? 'yes' : 'no') : (fs.existsSync(path.join(rd, 'FINAL.md')) ? 'yes' : 'unknown');
+      const lastUpdated = st ? st.last_updated : (fs.existsSync(path.join(rd, 'FINAL.md')) ? fs.statSync(path.join(rd, 'FINAL.md')).mtime.toISOString() : '-');
+      const orphan = st ? isOrphan(st) : (converged === 'unknown');
+      if (converged !== 'yes') anyUnconverged = true;
+      rows.push({ slug: e.name, kind: isBatch ? 'batch' : 'single', round, converged, material, last_updated: lastUpdated, orphan });
+    }
+    // Render table
+    const pad = (s, n) => String(s).padEnd(n);
+    console.log(`${pad('slug', 40)} ${pad('kind', 7)} ${pad('round', 6)} ${pad('converged', 10)} ${pad('material', 9)} ${pad('last_updated', 22)} orphan`);
+    console.log('-'.repeat(100));
+    for (const r of rows) {
+      console.log(`${pad(r.slug.slice(0, 40), 40)} ${pad(r.kind, 7)} ${pad(r.round, 6)} ${pad(r.converged, 10)} ${pad(r.material, 9)} ${pad(String(r.last_updated).slice(0, 22), 22)} ${r.orphan ? 'ORPHAN' : ''}`);
+    }
+    process.exit(anyUnconverged ? 1 : 0);
+  }
+  case 'resume': {
+    // STATUS-02: locate run, print resume plan JSON so slash command can re-dispatch orchestrator.
+    const slug = argv[1];
+    if (!slug) die('usage: resume <slug>');
+    const runDir = findRunDir(slug);
+    const st = readStatus(runDir);
+    const rounds = fs.readdirSync(runDir).filter(n => /^round-\d+$/.test(n)).map(n => parseInt(n.replace('round-', ''), 10)).sort((a, b) => a - b);
+    const lastRound = rounds.length ? rounds[rounds.length - 1] : 1;
+    // Detect partial-round: critiques present but no aggregate
+    const rDir = path.join(runDir, `round-${lastRound}`);
+    const critiques = fs.existsSync(rDir) ? fs.readdirSync(rDir).filter(n => /^critique-.+\.md$/.test(n)) : [];
+    const hasAggregate = fs.existsSync(path.join(rDir, 'aggregate.json'));
+    let resumePhase;
+    if (critiques.length && !hasAggregate) resumePhase = 'aggregate-and-plan-editor';
+    else if (hasAggregate && !fs.existsSync(path.join(rDir, 'proposed-redraft.md'))) resumePhase = 'plan-editor';
+    else if (fs.existsSync(path.join(rDir, 'proposed-redraft.md'))) resumePhase = 'apply-redraft';
+    else resumePhase = 'plan-reviewers';
+    console.log(JSON.stringify({
+      slug,
+      run_dir: runDir,
+      resume_from_round: lastRound,
+      resume_from_phase: resumePhase,
+      status: st,
+      partial_round: critiques.length && !hasAggregate,
+      critiques_present: critiques.length,
+    }, null, 2));
+    break;
+  }
+  case 'dry-run': {
+    // DRYRUN-01: emit cost estimate without dispatching reviewers.
+    const artifact = argv[1];
+    if (!artifact) die('usage: dry-run <artifact-path> [--panel-size N]');
+    const psFlag = argv.indexOf('--panel-size');
+    const panelSize = psFlag > 0 ? parseInt(argv[psFlag + 1], 10) : null;
+    (async () => {
+      let runInfo;
+      try { runInfo = await initRun(cwd, artifact); }
+      catch (err) { console.error(`tumble-dry: dry-run init failed: ${err.message}`); process.exit(3); }
+      const { slug, runDir, artifactAbs } = runInfo;
+      const cfg = loadConfig(cwd);
+      const ps = panelSize || cfg.panel_size || 5;
+      const artifactText = fs.readFileSync(artifactAbs, 'utf-8');
+      const estimate = estimateRunCost({
+        artifactChars: artifactText.length,
+        panelSize: ps,
+        maxRounds: cfg.max_rounds || 4,
+        thinkingBudget: cfg.editor_thinking_budget || 4000,
+      });
+      const costMd = renderCostBlock(estimate);
+      const out = {
+        slug,
+        run_dir: runDir,
+        artifact: artifactAbs,
+        artifact_chars: artifactText.length,
+        panel_size: ps,
+        estimate,
+      };
+      // Write cost block + dry-run record
+      fs.writeFileSync(path.join(runDir, 'dry-run.md'), `# Dry run — ${slug}\n\n${costMd}\n`, 'utf-8');
+      console.log(JSON.stringify(out, null, 2));
+      console.log('');
+      console.log(costMd);
+    })().catch(e => { console.error(e.stack || e.message); process.exit(1); });
+    break;
+  }
+  case 'report': {
+    // HEADLESS-03: write per-round or final REPORT.md
+    const slug = argv[1];
+    const subMode = argv[2]; // 'round' or 'final'
+    const roundN = parseInt(argv[3], 10);
+    if (!slug || !subMode) die('usage: report <slug> <round|final> [round-number]');
+    const runDir = findRunDir(slug);
+    if (subMode === 'round') {
+      if (!roundN) die('usage: report <slug> round <round-number>');
+      const p = writeRoundReport(runDir, roundN);
+      if (!p) die(`round ${roundN} report generation failed — missing round dir or aggregate`);
+      console.log(p);
+    } else if (subMode === 'final') {
+      const p = writeFinalReport(runDir);
+      if (!p) die(`final report generation failed — no rounds found`);
+      console.log(p);
+    } else { die(`unknown report mode: ${subMode}`); }
+    break;
+  }
+  case 'status-write': {
+    // Orchestrator surface: patch status.json. Args: slug, then key=value pairs.
+    const slug = argv[1];
+    if (!slug) die('usage: status-write <slug> key=value [key=value ...]');
+    const runDir = findRunDir(slug);
+    const patch = {};
+    for (const kv of argv.slice(2)) {
+      const m = kv.match(/^([^=]+)=(.*)$/);
+      if (!m) continue;
+      const key = m[1].trim();
+      let val = m[2];
+      if (val === 'true') val = true;
+      else if (val === 'false') val = false;
+      else if (/^-?\d+(\.\d+)?$/.test(val)) val = Number(val);
+      patch[key] = val;
+    }
+    const updated = writeStatus(runDir, patch);
+    console.log(JSON.stringify(updated, null, 2));
+    break;
+  }
+  case 'status-render': {
+    const slug = argv[1];
+    if (!slug) die('usage: status-render <slug>');
+    const runDir = findRunDir(slug);
+    const st = readStatus(runDir);
+    console.log(renderProgressLine(st));
+    break;
+  }
+  case 'config': {
+    // Extended: `config init` dumps inferred config.
+    if (argv[1] === 'init') {
+      const res = dumpConfigYaml(cwd, { overwrite: argv.includes('--force') });
+      console.log(JSON.stringify(res, null, 2));
+      break;
+    }
+    console.log(JSON.stringify(loadConfig(cwd), null, 2));
+    break;
+  }
+  case 'canary-infer': {
+    // CANARY-01: surface inferred defaults as JSON for slash command + diagnostics.
+    const inferred = inferDefaults(cwd, { cache: !argv.includes('--no-cache') });
+    console.log(JSON.stringify(inferred, null, 2));
     break;
   }
   default:

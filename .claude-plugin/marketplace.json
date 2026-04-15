@@ -14,6 +14,15 @@
     { "name": "assumption-auditor", "path": "agents/assumption-auditor.md" },
     { "name": "reviewer",           "path": "agents/reviewer.md" },
     { "name": "editor",             "path": "agents/editor.md" },
-    { "name": "editor-code",        "path": "agents/editor-code.md" }
+    { "name": "editor-code",        "path": "agents/editor-code.md" },
+    { "name": "orchestrator",       "path": "agents/orchestrator.md" }
+  ],
+  "skills": [
+    {
+      "name": "tumble-dry",
+      "description": "Polish content (markdown, office, code) via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor. Batch + dry-run + resume supported.",
+      "argument-hint": "<artifact|glob|dir|status|resume <slug>> [--dry-run] [--per-file-audience] [--apply] [--panel-size N]",
+      "command_path": "commands/tumble-dry.md"
+    }
   ]
 }
