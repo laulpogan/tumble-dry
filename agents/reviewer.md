@@ -70,3 +70,15 @@ Write `critique-<persona-slug>.md` in the round dir. Format:
 ```
 
 Every finding MUST have a `**severity:**` line and a `**summary:**` line on its own lines. The aggregator parses these.
+
+## Code mode
+
+When the brief injects a `language: <lang>` header (artifact is code, not prose):
+
+- **Do NOT flag issues a linter would catch** — assume the file is linter-clean. Unused vars, missing semicolons, style-rule violations are out of scope for human review. Your persona focuses on correctness, architecture, API shape, failure modes, and what your persona (staff eng / security / on-call SRE / new-hire-in-6-months) would bounce on.
+- **Voice is not a dimension** — code has no "voice." Skip any critique framed as "the author's style." If code is legal and correct, leave style to tooling.
+- **Structural findings in code** = premise-level: wrong abstraction, wrong data model, wrong concurrency discipline, API shape that forces bad caller ergonomics. Mark with `STRUCTURAL:` — editor rewrites can't fix these.
+- **Signature changes on public API are always structural.** If you argue a public function's signature is wrong, that is structural by default.
+- **Polyglot regions** — if the brief notes `regions: [{lang, range}]`, review each region in its own language's idioms. A Python heredoc inside a bash script is Python code, not a bash critique.
+
+Your persona's bounce triggers already exclude linter-catchable issues (per PERSONA-06). Stay faithful to the persona; if the persona would not care about a cosmetic point, don't raise it.

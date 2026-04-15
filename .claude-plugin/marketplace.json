@@ -1,7 +1,7 @@
 {
   "name": "tumble-dry",
-  "version": "0.5.2",
-  "description": "Polish written work (docs, copy, decks, models, code) through simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor.",
+  "version": "0.6.0",
+  "description": "Polish written work AND code (docs, copy, decks, models, source files) through simulated public contact — parallel reviewer personas, assumption audit, voice- or style-anchored editor, AST-aware drift, verify_cmd gate.",
   "author": "Paul Logan",
   "commands": [
     {
@@ -13,6 +13,7 @@
     { "name": "audience-inferrer",  "path": "agents/audience-inferrer.md" },
     { "name": "assumption-auditor", "path": "agents/assumption-auditor.md" },
     { "name": "reviewer",           "path": "agents/reviewer.md" },
-    { "name": "editor",             "path": "agents/editor.md" }
+    { "name": "editor",             "path": "agents/editor.md" },
+    { "name": "editor-code",        "path": "agents/editor-code.md" }
   ]
 }

@@ -41,13 +41,13 @@
 
 ### Code Support (v0.6.0)
 
-- [ ] **CODE-01** Source detected as code via `linguist-js` (extension + content heuristics) + shebang fallback. Detector contract: `{primary: lang, regions: [{lang, range}], confidence}` for polyglot artifacts (.ipynb cells, .html with embedded JS/CSS, shell-with-python-heredoc). Reviewer briefs include `language: <primary>` plus per-region annotations.
-- [ ] **CODE-02** AST-aware drift report using **`web-tree-sitter` (WASM)** — NOT native `tree-sitter` bindings (break on Windows + Linux ARM + fresh macOS). Drift taxonomy: `unchanged | renamed | moved | modified | signature_changed | added | removed | reformatted` at function/symbol granularity. Signature changes on public API are permanent structural flag (cannot be silently auto-converged). Falls back to sentence diff if a language's WASM grammar isn't present.
-- [ ] **CODE-03** `lib/loaders/code.cjs` produces a structured projection (file list with per-file fence blocks tagged with language) when source is a code directory rather than a single file.
-- [ ] **CODE-04** Editor brief swaps voice excerpts for language-specific style anchors when artifact is code (PEP 8 for Python, Effective Go for Go, Rust API guidelines for Rust, JavaScript Standard for JS, language defaults table for others).
-- [ ] **CODE-05** Code-review persona panel pulls from PERSONA-06 by default when artifact is code; layman gets replaced with new-hire-in-6-months. Reviewer briefs include "do NOT flag issues a linter would catch — assume linter clean."
-- [ ] **CODE-06** Editor rewrite in code mode is constrained to NOT introduce undefined references / unimported modules / syntax errors. Failed parse on the redraft = drift report flags `proposed-redraft-invalid` and the loop continues without applying.
-- [ ] **CODE-07** `verify_cmd` config hook: editor redraft must pass user-defined verify command (default `npm test -- --run` when `package.json` has a `test` script; otherwise none) AND tree-sitter parseability check before convergence is allowed. Failed verify_cmd = redraft rejected, loop continues with prior state. Sandboxing strategy documented in phase planning.
+- [x] **CODE-01** Source detected as code via `linguist-js` (extension + content heuristics) + shebang fallback. Detector contract: `{primary: lang, regions: [{lang, range}], confidence}` for polyglot artifacts (.ipynb cells, .html with embedded JS/CSS, shell-with-python-heredoc). Reviewer briefs include `language: <primary>` plus per-region annotations.
+- [x] **CODE-02** AST-aware drift report using **`web-tree-sitter` (WASM)** — NOT native `tree-sitter` bindings (break on Windows + Linux ARM + fresh macOS). Drift taxonomy: `unchanged | renamed | moved | modified | signature_changed | added | removed | reformatted` at function/symbol granularity. Signature changes on public API are permanent structural flag (cannot be silently auto-converged). Falls back to sentence diff if a language's WASM grammar isn't present.
+- [x] **CODE-03** `lib/loaders/code.cjs` produces a structured projection (file list with per-file fence blocks tagged with language) when source is a code directory rather than a single file.
+- [x] **CODE-04** Editor brief swaps voice excerpts for language-specific style anchors when artifact is code (PEP 8 for Python, Effective Go for Go, Rust API guidelines for Rust, JavaScript Standard for JS, language defaults table for others).
+- [x] **CODE-05** Code-review persona panel pulls from PERSONA-06 by default when artifact is code; layman gets replaced with new-hire-in-6-months. Reviewer briefs include "do NOT flag issues a linter would catch — assume linter clean."
+- [x] **CODE-06** Editor rewrite in code mode is constrained to NOT introduce undefined references / unimported modules / syntax errors. Failed parse on the redraft = drift report flags `proposed-redraft-invalid` and the loop continues without applying.
+- [x] **CODE-07** `verify_cmd` config hook: editor redraft must pass user-defined verify command (default `npm test -- --run` when `package.json` has a `test` script; otherwise none) AND tree-sitter parseability check before convergence is allowed. Failed verify_cmd = redraft rejected, loop continues with prior state. Sandboxing strategy documented in phase planning.
 
 ### Core Hardening (cross-cutting — derived from PITFALLS)
 
@@ -117,13 +117,13 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 | FORMAT-05 | Phase 4 — FORMAT (v0.5.2) | Complete |
 | FORMAT-06 | Phase 4 — FORMAT (v0.5.2) | Complete |
 | FORMAT-07 | Phase 4 — FORMAT (v0.5.2) | Complete |
-| CODE-01 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-02 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-03 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-04 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-05 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-06 | Phase 5 — CODE (v0.6.0) | Pending |
-| CODE-07 | Phase 5 — CODE (v0.6.0) | Pending |
+| CODE-01 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-02 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-03 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-04 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-05 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-06 | Phase 5 — CODE (v0.6.0) | Complete |
+| CODE-07 | Phase 5 — CODE (v0.6.0) | Complete |
 | QOL-01 | Phase 6 — RELEASE / QOL | Pending |
 | QOL-02 | Phase 6 — RELEASE / QOL | Pending |
 | QOL-03 | Phase 6 — RELEASE / QOL | Pending |

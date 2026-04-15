@@ -30,7 +30,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawnSync } = require('child_process');
 const { loadConfig } = require('../lib/config.cjs');
 const { initRun, roundDir: ensureRoundDir, currentRound, snapshotHistory } = require('../lib/run-state.cjs');
 const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggregator.cjs');
@@ -160,7 +160,95 @@ async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }
   const stagedPath = runCli(['extract-redraft', slug, String(roundN)]).trim();
   const driftJson = runCli(['drift', slug, String(roundN), artifactAbs, stagedPath]);
   const drift = JSON.parse(driftJson);
-  log(`round ${roundN} — drift: score=${drift.drift_score} unchanged=${drift.counts.unchanged} modified=${drift.counts.modified} inserted=${drift.counts.inserted} deleted=${drift.counts.deleted}`);
+  if (drift.backend === 'tree-sitter') {
+    log(`round ${roundN} — AST drift: score=${drift.drift_score} signature_changes=${drift.signature_changed_count || 0} counts=${JSON.stringify(drift.counts)}`);
+  } else {
+    log(`round ${roundN} — drift: score=${drift.drift_score} unchanged=${drift.counts.unchanged} modified=${drift.counts.modified} inserted=${drift.counts.inserted} deleted=${drift.counts.deleted}`);
+  }
+
+  // CODE-06/07: code-mode guardrails.
+  // If parse_check failed, or verify_cmd failed, DO NOT apply the redraft.
+  const srcFmtPath = path.join(runDir, 'source-format.json');
+  let srcMeta = { artifact_kind: 'prose' };
+  if (fs.existsSync(srcFmtPath)) {
+    try { srcMeta = JSON.parse(fs.readFileSync(srcFmtPath, 'utf-8')); } catch { /* ignore */ }
+  }
+
+  let redraftRejected = false;
+  const rejectReasons = [];
+  if (srcMeta.artifact_kind === 'code') {
+    if (drift.parse_check && drift.parse_check.ok === false && !drift.parse_check.skipped) {
+      redraftRejected = true;
+      rejectReasons.push(`proposed-redraft-invalid: ${drift.parse_check.error}`);
+    }
+    if (drift.signature_changed_count && drift.signature_changed_count > 0) {
+      log(`round ${roundN} — ⚠ ${drift.signature_changed_count} signature change(s) flagged STRUCTURAL (cannot silently converge)`);
+    }
+
+    // verify_cmd: default to `npm test -- --run` when package.json has a
+    // `test` script; otherwise no verify. Config override wins.
+    let verifyCmd = config.verify_cmd || null;
+    if (!verifyCmd) {
+      const sourcePathFile = path.join(runDir, 'source.path');
+      const sourcePath = fs.existsSync(sourcePathFile)
+        ? fs.readFileSync(sourcePathFile, 'utf-8').trim() : null;
+      if (sourcePath) {
+        const stat = fs.statSync(sourcePath);
+        const projectDir = stat.isDirectory() ? sourcePath : path.dirname(sourcePath);
+        const pkg = path.join(projectDir, 'package.json');
+        if (fs.existsSync(pkg)) {
+          try {
+            const pkgJson = JSON.parse(fs.readFileSync(pkg, 'utf-8'));
+            if (pkgJson.scripts && pkgJson.scripts.test) {
+              verifyCmd = { cmd: 'npm', args: ['test', '--', '--run'], cwd: projectDir };
+            }
+          } catch { /* ignore */ }
+        }
+      }
+    } else if (typeof verifyCmd === 'string') {
+      verifyCmd = { cmd: 'sh', args: ['-c', verifyCmd], cwd: path.dirname(stagedPath) };
+    }
+
+    if (verifyCmd && !redraftRejected) {
+      log(`round ${roundN} — verify_cmd: ${verifyCmd.cmd} ${verifyCmd.args.join(' ')} (cwd=${verifyCmd.cwd})`);
+      const r = spawnSync(verifyCmd.cmd, verifyCmd.args, {
+        cwd: verifyCmd.cwd,
+        encoding: 'utf-8',
+        timeout: 300000,
+      });
+      const verifyLog = {
+        cmd: verifyCmd.cmd,
+        args: verifyCmd.args,
+        cwd: verifyCmd.cwd,
+        status: r.status,
+        stdout_tail: (r.stdout || '').slice(-4000),
+        stderr_tail: (r.stderr || '').slice(-4000),
+      };
+      fs.writeFileSync(path.join(roundDir, 'verify.json'), JSON.stringify(verifyLog, null, 2), 'utf-8');
+      if (r.status !== 0) {
+        redraftRejected = true;
+        rejectReasons.push(`verify_cmd failed (exit ${r.status})`);
+      }
+    }
+
+    if (redraftRejected) {
+      log(`round ${roundN} — ⚠ redraft REJECTED: ${rejectReasons.join('; ')} — working.md unchanged`);
+      fs.writeFileSync(path.join(roundDir, 'redraft-rejected.md'),
+        `# Redraft rejected — round ${roundN}\n\n` +
+        rejectReasons.map(r => `- ${r}`).join('\n') + '\n',
+        'utf-8');
+      // Surface to aggregate for next-round brief visibility.
+      const aggPath = path.join(roundDir, 'aggregate.md');
+      if (fs.existsSync(aggPath)) {
+        const prior = fs.readFileSync(aggPath, 'utf-8');
+        fs.writeFileSync(aggPath,
+          prior + `\n\n## ⚠ Redraft rejected\n\n${rejectReasons.map(r => `- ${r}`).join('\n')}\n\n` +
+          `The editor's proposed redraft did not satisfy code-mode guardrails. working.md is unchanged.\n`,
+          'utf-8');
+      }
+      return; // keep working.md as-is; loop continues with prior state
+    }
+  }
 
   // Non-destructive: snapshot the working copy state before+after the editor
   // pass into history/. The source file (recorded in source.path) is never touched.

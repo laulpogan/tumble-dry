@@ -313,10 +313,10 @@
 
   "code": {
     "panel_size": 5,
-    "convergence_threshold": 2,
+    "convergence_threshold": 1,
     "editor_thinking_budget": 6000,
     "max_rounds": 5,
     "drift_threshold": 0.15,
-    "_notes": "PERSONA-06 / CODE-05: replace layman with new-hire-in-6-months (Yuki Tanaka). Reviewer brief MUST include 'Do NOT flag issues a linter would catch — assume linter clean.' drift_threshold is 0.15 (stricter than default 0.25) because semantic drift in code is higher-cost than in prose. Consumers also call this type 'code-review'."
+    "_notes": "PERSONA-06 / CODE-05: replace layman with new-hire-in-6-months (Yuki Tanaka). Reviewer brief MUST include 'Do NOT flag issues a linter would catch — assume linter clean.' drift_threshold is 0.15 (stricter than default 0.25 — semantic drift in code is higher-cost than prose). convergence_threshold is 1 (stricter than default 2) — one material finding on code is enough to block. Consumers also call this type 'code-review'."
   }
 }

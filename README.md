@@ -121,6 +121,46 @@ All loaders return a typed result: `{ ok:true, markdown, format, warnings[] }` o
 
 Encoding invariants (FORMAT-07): UTF-8 default, BOM stripped on read, CJK / RTL / curly-quote / emoji preserved through the projection.
 
+## Code mode
+
+Point tumble-dry at a source file or a code directory:
+
+```bash
+/tumble-dry path/to/module.js
+/tumble-dry path/to/project        # detects via package.json / go.mod / etc.
+```
+
+The loader recognizes a code artifact via `linguist-js` (extension + content heuristics) and falls back to a shebang sniff for extension-less scripts. For a directory, any of `package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, or ≥3 files with recognized programming extensions triggers code mode.
+
+**What changes in code mode:**
+
+- **Reviewer briefs** carry a `language: <primary>` header and skip voice excerpts entirely. Reviewers are explicitly told: *do NOT flag issues a linter would catch — assume linter-clean input.* The default panel swaps the layman for **Yuki Tanaka (new-hire-in-6-months)** per PERSONA-06.
+- **Editor** switches to `agents/editor-code.md`. Voice samples are replaced by a language-specific **style anchor** (PEP 8 for Python, Effective Go for Go, Rust API Guidelines for Rust, JavaScript Standard for JS/TS, generic defaults for everything else).
+- **Drift report** is AST-aware. `lib/code/ast-drift.cjs` uses `web-tree-sitter` (WASM) + a per-language grammar to enumerate top-level symbols and classify each: `unchanged | renamed | moved | modified | signature_changed | added | removed | reformatted`. **Signature changes on public API are a permanent STRUCTURAL flag** — they can never be silently auto-converged.
+- **Parseability gate:** the redraft is parsed with the same grammar. `hasError` trees mark the redraft as `proposed-redraft-invalid` and the loop discards it.
+- **`verify_cmd` gate:** if your project has a `package.json` with a `test` script, tumble-dry runs `npm test -- --run` against the staged redraft before applying it. Override in `.tumble-dry.yml`:
+
+  ```yaml
+  verify_cmd: "cargo test --quiet"
+  ```
+
+  A non-zero exit rejects the redraft; `working.md` is left unchanged and the next round's reviewers see the rejection.
+
+**Style anchors shipped:** Python, Go, Rust, JavaScript (also covers TypeScript). Unlisted languages fall back to `lib/code/style-anchors/default.cjs` — a generic "follow existing conventions" anchor.
+
+**Tree-sitter grammars:** only `tree-sitter-javascript` ships in `optionalDependencies`. For Python / Go / Rust / TypeScript AST drift, install the grammar yourself:
+
+```bash
+npm install --no-save tree-sitter-python tree-sitter-go tree-sitter-rust tree-sitter-typescript
+```
+
+Missing grammars degrade gracefully to `lib/voice.cjs::voiceDriftReport` sentence diff — you still get a drift number, just not the per-symbol taxonomy.
+
+**Limitations:**
+- Single-language files and directories are well supported. Polyglot files (HTML with embedded JS, Markdown with fenced code, shell with language heredocs) are **detected** but the AST drift report only processes the primary language.
+- Large files (>512KB per file in directory mode; >20MB total projection) are excluded with a warning.
+- Static analysis (lint, type-check) is the user's job. Tumble-dry reviews **what a person would flag**, not what a linter already catches.
+
 ## How it works
 
 1. **Audience Inferrer** reads the artifact, proposes 3–6 specific personas (not "a reader" — *"CFO at a mid-market SaaS, 10+ years in finance, skeptical of AI hype after a failed pilot last year"*). Persona library by artifact type seeded into prompt.

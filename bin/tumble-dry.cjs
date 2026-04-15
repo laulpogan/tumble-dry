@@ -23,6 +23,7 @@ const { loadConfig } = require('../lib/config.cjs');
 const { sampleExcerpts, getVoiceExcerpts, voiceDriftReport } = require('../lib/voice.cjs');
 const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggregator.cjs');
 const { initRun, roundDir, currentRound } = require('../lib/run-state.cjs');
+const { astDriftReport, parseCheck } = require('../lib/code/ast-drift.cjs');
 const {
   buildReviewerBrief,
   buildAudienceBrief,
@@ -44,6 +45,20 @@ function findRunDir(slug) {
   const dir = path.join(cwd, '.tumble-dry', slug);
   if (!fs.existsSync(dir)) die(`run not found: ${dir}`);
   return dir;
+}
+
+function readSourceFormat(runDir) {
+  const p = path.join(runDir, 'source-format.json');
+  if (!fs.existsSync(p)) return { artifact_kind: 'prose' };
+  try {
+    const raw = JSON.parse(fs.readFileSync(p, 'utf-8'));
+    return {
+      artifact_kind: raw.artifact_kind || 'prose',
+      language: raw.language || null,
+      regions: raw.regions || [],
+      format: raw.format,
+    };
+  } catch { return { artifact_kind: 'prose' }; }
 }
 
 async function runInit(artifact) {
@@ -158,6 +173,52 @@ switch (cmd) {
     fs.mkdirSync(rDir, { recursive: true });
     const before = fs.readFileSync(beforePath, 'utf-8');
     const after = fs.readFileSync(afterPath, 'utf-8');
+    const srcMeta = readSourceFormat(runDir);
+    if (srcMeta.artifact_kind === 'code') {
+      (async () => {
+        const astReport = await astDriftReport(before, after, srcMeta.language);
+        const parseResult = await parseCheck(after, srcMeta.language);
+        const driftPath = path.join(rDir, 'drift.json');
+        const out = {
+          round,
+          backend: astReport.backend,
+          language: srcMeta.language,
+          ...astReport,
+          parse_check: parseResult,
+          drift_path: driftPath,
+        };
+        fs.writeFileSync(driftPath, JSON.stringify(out, null, 2), 'utf-8');
+
+        const lines = [`# Round ${round} AST-Drift Report (${astReport.backend})`, ''];
+        if (astReport.backend === 'tree-sitter') {
+          lines.push(`**Language:** ${srcMeta.language}`);
+          lines.push(`**Symbols before:** ${astReport.symbols_before} · **after:** ${astReport.symbols_after}`);
+          lines.push(`**Drift score:** ${astReport.drift_score}`);
+          const c = astReport.counts;
+          lines.push(`**Counts:** unchanged=${c.unchanged} reformatted=${c.reformatted} moved=${c.moved} modified=${c.modified} renamed=${c.renamed} signature_changed=${c.signature_changed} added=${c.added} removed=${c.removed}`);
+          if (astReport.signature_changed_count > 0) {
+            lines.push('');
+            lines.push(`**⚠ STRUCTURAL: ${astReport.signature_changed_count} signature change(s) on public API** — cannot silently auto-converge:`);
+            for (const s of astReport.signature_changed_symbols) lines.push(`- \`${s}\``);
+          }
+          if (astReport.classifications) {
+            lines.push('', '## Per-symbol classifications', '');
+            for (const cls of astReport.classifications.slice(0, 50)) {
+              lines.push(`- **${cls.kind}** \`${cls.name}\``);
+            }
+          }
+        } else {
+          lines.push(`_Fallback to sentence diff — ${astReport.reason || 'no grammar'}._`);
+          lines.push(`**Drift score:** ${astReport.drift_score}`);
+        }
+        if (!parseResult.ok && !parseResult.skipped) {
+          lines.push('', '## ⚠ proposed-redraft-invalid', '', `Parse failed: ${parseResult.error}`);
+        }
+        fs.writeFileSync(path.join(rDir, 'diff.md'), lines.join('\n') + '\n', 'utf-8');
+        console.log(JSON.stringify(out, null, 2));
+      })().catch(e => { console.error(e.stack || e.message); process.exit(1); });
+      break;
+    }
     const report = voiceDriftReport(before, after);
     const { counts, drift_score, sentences_before, sentences_after } = report;
     const lines = [];
@@ -270,6 +331,7 @@ switch (cmd) {
     if (!targets.length) die(onlySlug ? `persona slug not found: ${onlySlug}` : `no personas in audience.md`);
     const cfg = loadConfig(cwd);
     const reviewerAgentPath = path.join(AGENTS_DIR, 'reviewer.md');
+    const srcMeta = readSourceFormat(runDir);
     const written = [];
     for (const p of targets) {
       const brief = buildReviewerBrief({
@@ -277,10 +339,15 @@ switch (cmd) {
         personaSlug: p.slug,
         personaBlock: p.block,
         assumptionAudit,
-        voiceExcerpts: getVoiceExcerpts(cfg.voice_refs, artifactPath, 4).excerpts,
+        voiceExcerpts: srcMeta.artifact_kind === 'code'
+          ? []
+          : getVoiceExcerpts(cfg.voice_refs, artifactPath, 4).excerpts,
         roundNumber: round,
         reviewerAgentPath,
         runDir, // HARDEN-04: auto-loads prior round's unresolved material
+        artifactKind: srcMeta.artifact_kind,
+        language: srcMeta.language,
+        regions: srcMeta.regions,
       });
       const outPath = path.join(rDir, `brief-reviewer-${p.slug}.md`);
       fs.writeFileSync(outPath, brief, 'utf-8');
@@ -301,19 +368,28 @@ switch (cmd) {
     if (!fs.existsSync(aggPath)) die(`aggregate.md not found — run aggregate first`);
     const aggregateMarkdown = fs.readFileSync(aggPath, 'utf-8');
     const cfg = loadConfig(cwd);
+    const srcMeta = readSourceFormat(runDir);
+    const isCode = srcMeta.artifact_kind === 'code';
+    // CODE-04: code mode swaps voice excerpts for style anchors and
+    // routes to agents/editor-code.md instead of agents/editor.md.
+    const editorAgent = isCode ? 'editor-code.md' : 'editor.md';
     // Self-voice fallback when no voice_refs configured: sample from the
     // original source. Editor's job becomes "preserve the source's own voice"
     // rather than "imitate an external corpus."
     const originalSnapshot = path.join(runDir, 'history', 'round-0-original.md');
     const voiceAnchor = fs.existsSync(originalSnapshot) ? originalSnapshot : artifactPath;
-    const { source: voiceSource, excerpts } = getVoiceExcerpts(cfg.voice_refs, voiceAnchor, 4);
+    const { source: voiceSource, excerpts } = isCode
+      ? { source: null, excerpts: [] }
+      : getVoiceExcerpts(cfg.voice_refs, voiceAnchor, 4);
     const brief = buildEditorBrief({
       artifactText,
       aggregateMarkdown,
       voiceExcerpts: excerpts,
       voiceSource,
-      agentPath: path.join(AGENTS_DIR, 'editor.md'),
+      agentPath: path.join(AGENTS_DIR, editorAgent),
       roundNumber: round,
+      artifactKind: srcMeta.artifact_kind,
+      language: srcMeta.language,
     });
     const outPath = path.join(rDir, 'brief-editor.md');
     fs.writeFileSync(outPath, brief, 'utf-8');
