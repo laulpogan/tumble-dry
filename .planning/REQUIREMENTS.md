@@ -10,14 +10,14 @@
 
 ### Dispatch — Claude Code-native (v0.5.0)
 
-- [ ] **DISPATCH-01** Slash command `/tumble-dry <artifact>` runs the full convergence loop using only the user's active Claude Code session — no `ANTHROPIC_API_KEY` required, no separate process.
+- [x] **DISPATCH-01** Slash command `/tumble-dry <artifact>` runs the full convergence loop using only the user's active Claude Code session — no `ANTHROPIC_API_KEY` required, no separate process.
 - [x] **DISPATCH-02** Each agent (audience-inferrer, assumption-auditor, reviewer × N personas, editor) is dispatched as a parallel `Task` (aliased to `Agent` in CC v2.1.63+) call. **All N reviewer Task calls in ONE assistant turn — serial cross-turn dispatch is the #1 silent bug** (false convergence on partial rounds). `bin/validate-plugin.cjs` cross-checks `agents/*.md` frontmatter `name` against `.claude-plugin/marketplace.json` and is CI-gated.
 - [ ] **DISPATCH-03** `agents/*.md` frontmatter conforms to current Claude Code plugin-shipped subagent spec: `name` (no `tumble-dry-` prefix — that was wrong), `description`, `tools`, optional `model`/`disallowedTools`/`maxTurns`/`color`. **Plugin-shipped agents cannot use `hooks`, `mcpServers`, or `permissionMode`** — silently stripped by the loader.
 - [ ] **DISPATCH-04** Plugin spec compliance: `marketplace.json` relocated to `.claude-plugin/marketplace.json`; new `.claude-plugin/plugin.json` manifest declares the plugin per current CC plugin docs. Verified via `claude plugin validate .` (or equivalent).
-- [ ] **DISPATCH-05** Loop orchestration lives in `commands/tumble-dry.md` as prose + bash + Task calls. The bash steps shell out to `bin/tumble-dry.cjs` for data-plane work (init, brief generation, aggregate, drift, finalize) — no LLM calls in bin/. **Filesystem is IPC**: subagents write to known paths from the brief; orchestrator reads `aggregate.md` (5–10KB) only, NOT raw critique files (otherwise context burns).
+- [x] **DISPATCH-05** Loop orchestration lives in `commands/tumble-dry.md` as prose + bash + Task calls. The bash steps shell out to `bin/tumble-dry.cjs` for data-plane work (init, brief generation, aggregate, drift, finalize) — no LLM calls in bin/. **Filesystem is IPC**: subagents write to known paths from the brief; orchestrator reads `aggregate.md` (5–10KB) only, NOT raw critique files (otherwise context burns).
 - [ ] **DISPATCH-06** `bin/tumble-dry-loop.cjs` (the legacy autonomous Node driver) keeps working as the headless / CI fallback. Its docstring + `--help` direct users to `/tumble-dry` for session-auth path. Trace fidelity degradation on CC path (no per-dispatch request/response payload — subagent context is isolated) is documented in README and `polish-log.md`.
-- [ ] **DISPATCH-07** Slash command surfaces per-round status to the user (round N starting, M reviewers dispatched, K material findings, converged/continuing) using the existing `[tumble-dry-loop]` log idiom.
-- [ ] **DISPATCH-08** Failure-mode taxonomy in `dispatch-errors.md`: Task timeout, malformed agent output (no severity tag, parse fail), refusal, silent-text-return-instead-of-file-write. Pre-dispatch manifest of expected critique paths; post-fanout glob reconciliation. **Partial-round policy:** if `M/N >= 0.6` AND material > 0, proceed with degradation warning; else retry-once with stricter brief; then abort with diagnostic.
+- [x] **DISPATCH-07** Slash command surfaces per-round status to the user (round N starting, M reviewers dispatched, K material findings, converged/continuing) using the existing `[tumble-dry-loop]` log idiom.
+- [x] **DISPATCH-08** Failure-mode taxonomy in `dispatch-errors.md`: Task timeout, malformed agent output (no severity tag, parse fail), refusal, silent-text-return-instead-of-file-write. Pre-dispatch manifest of expected critique paths; post-fanout glob reconciliation. **Partial-round policy:** if `M/N >= 0.6` AND material > 0, proceed with degradation warning; else retry-once with stricter brief; then abort with diagnostic.
 
 ### Persona Library (v0.5.1)
 
@@ -89,14 +89,14 @@ Each Active requirement maps to exactly one phase. Coverage: 38/38.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| DISPATCH-01 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-01 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | DISPATCH-02 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | DISPATCH-03 | Phase 1 — DISPATCH (v0.5.0) | Pending |
 | DISPATCH-04 | Phase 1 — DISPATCH (v0.5.0) | Pending |
-| DISPATCH-05 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-05 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | DISPATCH-06 | Phase 1 — DISPATCH (v0.5.0) | Pending |
-| DISPATCH-07 | Phase 1 — DISPATCH (v0.5.0) | Pending |
-| DISPATCH-08 | Phase 1 — DISPATCH (v0.5.0) | Pending |
+| DISPATCH-07 | Phase 1 — DISPATCH (v0.5.0) | Complete |
+| DISPATCH-08 | Phase 1 — DISPATCH (v0.5.0) | Complete |
 | PERSONA-01 | Phase 2 — PERSONA (v0.5.1) | Pending |
 | PERSONA-02 | Phase 2 — PERSONA (v0.5.1) | Pending |
 | PERSONA-03 | Phase 2 — PERSONA (v0.5.1) | Pending |
