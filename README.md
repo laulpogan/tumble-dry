@@ -1,8 +1,10 @@
 # tumble-dry
 
-**Polish written work through simulated public contact.** Parallel reviewer personas critique in-character, an assumption auditor surfaces hidden premises, a voice-preserving editor redrafts, and the loop runs until reviewers converge.
+**Polish written work and code through simulated public contact.** Parallel reviewer personas critique in-character, an assumption auditor surfaces hidden premises, a voice- or style-anchored editor redrafts, and the loop runs until reviewers converge.
 
-Works on docs, copy, ads, blogs, markdown decks, financial models, pitch decks, strategy memos, and **code** (any text-based artifact). Office formats (.docx / .pptx / .xlsx / .pdf) coming in v0.5.2.
+Works across four artifact families: **prose** (blog posts, essays, memos, ad copy, landing pages), **office formats** (.docx, .pptx, .xlsx, .pdf — projected to markdown for review), **code** (source files and directories — AST-aware drift, language-specific style anchors, `verify_cmd` gate), and **decks** (markdown decks natively; .pptx via the office-format loader).
+
+> **What's new in v0.6.0 (2026-04-15):** Code-aware mode ships. `linguist-js` detects the language; `web-tree-sitter` (WASM, not native — Windows + ARM safe) builds an AST-aware drift report with per-symbol taxonomy (unchanged / renamed / moved / modified / **signature_changed** / added / removed / reformatted). Editor swaps voice excerpts for PEP 8 / Effective Go / Rust API Guidelines / JS Standard. A `verify_cmd` config knob gates the redraft against your tests before it's applied. Release also closes out v0.5.0 (Claude Code-native `/tumble-dry` slash command — no `ANTHROPIC_API_KEY` required), v0.5.1 (persona library — 40 artifact types across 4 families), v0.5.2 (office-format ingestion via `mammoth`+`turndown`+`officeparser`+`unpdf`), and cross-cutting core hardening (drift-gate blocks convergence, bigram-Dice dedup, round-N brief seeding with unresolved clusters, trace retention, `.gitignore` bootstrap). See [CHANGELOG.md](CHANGELOG.md) for the full v0.4.2 → v0.6.0 history.
 
 ---
 
@@ -173,9 +175,7 @@ Missing grammars degrade gracefully to `lib/voice.cjs::voiceDriftReport` sentenc
 
 ## Dispatch
 
-**Default: direct Anthropic API.** Parallel API calls with prompt caching on the static prefix (artifact + audit + voice excerpts). Fast, cheap, no infrastructure. Reviewers run on Sonnet; audience-inferrer and editor run on Opus.
-
-**Opt-in: gastown polecats.** For GSD-Town users who want each agent in its own tmux session + Claude Code context. Set `dispatch_backend: gastown` in `.tumble-dry.yml`. Slower and more fragile; use only if you have a reason.
+**Two paths, same loop.** The Claude Code-native slash command (`/tumble-dry`) fans each agent out as a parallel `Task` subagent inside your active session — no API key required, session auth inherited. The headless CLI (`bin/tumble-dry-loop.cjs`) uses direct Anthropic API calls (requires `ANTHROPIC_API_KEY`), writes full per-dispatch traces, and is the CI / scripting fallback. Both share the same data plane (`bin/tumble-dry.cjs` subcommands) and produce the same `.tumble-dry/<slug>/` layout. Reviewers run on Sonnet; audience-inferrer and editor run on Opus. Parallel calls with prompt caching on the static prefix (artifact + audit + voice-or-style excerpts).
 
 ## Configuration
 
@@ -304,7 +304,7 @@ The drift report classifies every sentence in the redraft:
 - **Before fundraising.** Pitch deck + financial model. Persona library covers VC / CFO / Layman / Series-A out of the box.
 - **Before launch.** Website copy + pricing page against prospect / technical-buyer / non-technical-buyer.
 - **Before major pivots.** Strategy doc against skip-level exec / engineer / cross-functional partner / devil's advocate.
-- **Before merging non-trivial code.** Pre-PR self-review against staff-eng / security / on-call SRE / new-hire personas. Catches what tests and linters won't (architectural drift, premature abstraction, missing failure mode). Currently treats code as plaintext; v0.6.0 adds language-aware features.
+- **Before merging non-trivial code.** Pre-PR self-review against staff-eng / security / on-call SRE / new-hire personas. Catches what tests and linters won't (architectural drift, premature abstraction, missing failure mode). Language-aware as of v0.6.0 — AST drift, style anchors, `verify_cmd` gate.
 - **After competitive research.** Re-run on positioning vs the new landscape.
 - **Quarterly.** Investor update, board deck, OKR memo.
 
@@ -335,14 +335,24 @@ See [`examples/dogfood-2026-04-14/`](examples/dogfood-2026-04-14/) for a complet
 
 ## Status
 
-v0.4.0 — Non-destructive history + per-dispatch reasoning traces. Built on v0.3.0's persona libraries + structural-finding detection and v0.2.0's API-first convergence loop with prompt caching.
+**v0.6.0 (current — 2026-04-15).** Ship-ready. Prose, office formats, code, and decks all supported. See [CHANGELOG.md](CHANGELOG.md) for the phase-by-phase history.
 
-**Roadmap:**
-- **v0.4.2** (this release) — Gastown backend removed; voice now self-defaults to the source's own voice when no `voice_refs` configured; code added as supported artifact type.
-- **v0.5.0** — Claude Code-native dispatch: `/tumble-dry` slash command spawns each agent as a parallel `Task` subagent inside your active session. No `ANTHROPIC_API_KEY` required. Inherits your Claude Code session auth. The Node API path stays as the headless / CI fallback.
-- **v0.5.1** — Comprehensive persona library + runbook by artifact type and industry, including code-review personas (research in flight).
-- **v0.5.2** — Office format ingestion (.docx, .pptx, .xlsx, .pdf via mammoth, SheetJS, OOXML parsing, pdf-parse, pandoc fallback). Source-untouched still applies; FINAL.md ships as markdown.
-- **v0.6.0** — Code-aware features: language detection, AST-aware drift, language-specific style anchors (PEP 8, Effective Go, Rust API guidelines), code-review persona library.
+## Roadmap
+
+**Shipped (v0.4.2 → v0.6.0):**
+- **v0.4.2** — Gastown backend ripped (slow, fragile, infra-dependent); voice self-defaults to the source's own voice when no `voice_refs` configured; code accepted as plaintext artifact.
+- **v0.5.0** — Claude Code-native dispatch: `/tumble-dry` slash command fans each agent out as a parallel `Task` subagent in a single assistant turn. No `ANTHROPIC_API_KEY` required; session auth inherited. Plugin spec compliance (`.claude-plugin/plugin.json` + `marketplace.json`), CI plugin-spec validator, subagent-frontmatter migration, headless fallback documented.
+- **v0.5.1** — Persona library: 40 artifact types across 4 families (business/finance, product/engineering, marketing/comms, domain-specific), runbook with structural-vs-surface failure-mode index, per-type tuned defaults in `personas/configs.json`. Anti-mode-collapse pairing (believers + skeptics).
+- **v0.5.2** — Office-format ingestion: `mammoth`+`turndown` (.docx), `officeparser` (.pptx/.xlsx/.pdf primary), `unpdf` (.pdf ESM fallback), pandoc fallback when on `$PATH`. Typed-result contract `{ok, markdown, format, warnings}`. `ROUNDTRIP_WARNING.md` emitted before round 1. UTF-8 / BOM / CJK / RTL preserved.
+- **v0.6.0** — Code-aware mode: `linguist-js` detection, `web-tree-sitter` (WASM) AST drift with signature-change flags, language-specific style anchors (PEP 8 / Effective Go / Rust API Guidelines / JS Standard), code-review persona panel (staff eng, security, on-call SRE, new-hire-in-6-months, hostile-fork), parseability gate, `verify_cmd` redraft gate.
+- **Cross-cutting hardening** (threaded through v0.5.x) — voice-drift gate BLOCKS convergence (anti-reward-hack against editor suppressing findings by rewrite), bigram-Dice dedup with boundary-marker anchors, round-N briefs seeded with round-(N-1) unresolved clusters, trace retention (last 3 rounds full, older gzipped + summarized), `.tumble-dry/` auto-appended to `.gitignore` on first run.
+
+**Deferred to v0.7+ (see `.planning/REQUIREMENTS.md` §v2):**
+- **ROUNDTRIP-01** — Regenerate valid `.docx` / `.pptx` / `.xlsx` from edited markdown so source can be replaced in-place. Lossy and brittle; research-gated.
+- **MULTI-LLM-01** — OpenAI / Gemini / local-model dispatch. Anthropic-only through v0.6.
+- **WEB-UI-01** — Hosted SaaS / web-app frontend. CLI + plugin only through v0.6.
+- **VOICE-FT-01** — Personal fine-tuned voice model swap-in (the `fine_tune_model_path` config knob is already wired; awaiting the author's separate corpus project).
+- **REAL-USER-01** — Integration with real-user feedback channels (Posthog, Sentry, customer interview transcripts). Out of philosophy; tumble-dry simulates, doesn't substitute.
 
 ## License
 
