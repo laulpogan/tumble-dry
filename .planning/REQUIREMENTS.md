@@ -1,47 +1,71 @@
-# Requirements — Milestone v0.7 (ROUNDTRIP)
+# Requirements — Milestone v0.8 (UX Rebuild)
 
-**Source:** PROJECT.md Active section.
-**Scope:** v0.7.0 — opt-in office-format roundtrip (FINAL.md → FINAL.docx/pptx/xlsx alongside).
-**Out-of-scope:** PDF roundtrip (errors with guidance), lossless roundtrip (everything is explicitly lossy).
-**Prior milestone (v0.6.0) requirements:** archived at `.planning/milestones/v0.6.0-REQUIREMENTS.md` and reflected in PROJECT.md Validated section.
+**Source:** PM dogfood feedback on real canary run of tumble-dry on tumble-dry's own work.
+**Scope:** Headless orchestrator subagent + per-round reports (#1) + batch input (#2) + `tumble-dry status`/`resume` (#3) + `--dry-run` (#4) + zero-config canary (#5) + Skill registration (#6).
+**Out-of-scope:** MULTI-LLM, VOICE-FT, WEB-UI, REAL-USER (still in v2 deferred per PROJECT.md).
+**Prior milestones (v0.6.0, v0.7.0):** archived at `.planning/milestones/`.
 
 ---
 
 ## v1 Requirements (this milestone)
 
-### Roundtrip — opt-in office-format regeneration
+### Headless orchestrator + status surfacing (highest leverage)
 
-- [x] **ROUNDTRIP-01** Opt-in flag: slash command accepts `--apply`; CLI accepts `--write-final`. Default behavior unchanged: only FINAL.md is produced + manual re-apply hint. With flag, also write `FINAL.<ext>` alongside FINAL.md by re-rendering markdown into the source format.
-- [x] **ROUNDTRIP-02** `.docx` writer at `lib/writers/docx.cjs` using `docx@^9` npm lib. Preserves: heading levels (H1-H6), paragraphs, ordered + unordered lists, simple markdown tables, inline emphasis (bold/italic/inline code), block quotes. Drops: complex layouts, images, embedded objects, comments, track-changes, custom styles, footnotes (markdown footnote syntax may be supported as endnotes if cheap).
-- [x] **ROUNDTRIP-03** `.pptx` writer at `lib/writers/pptx.cjs` using `pptxgenjs@^3` npm lib. Re-renders each `<!-- slide:N -->` boundary marker as one slide. Per-slide structure: H2 → title text box; subsequent paragraphs/bullets → body text box. Drops: original templates, animations, transitions, embedded media, slide masters, theme colors. Speaker notes preserved if present in source markdown (e.g., `<!-- notes: ... -->`), else dropped.
-- [x] **ROUNDTRIP-04** `.xlsx` writer at `lib/writers/xlsx.cjs` using `exceljs@^4` npm lib (NOT SheetJS — same CVE rationale as ingestion). Re-renders each `<!-- sheet:Name -->` markdown table as one sheet. Drops: formulas (markdown table cells become literal strings/numbers), pivot tables, charts, conditional formatting, data validation, named ranges, frozen panes.
-- [x] **ROUNDTRIP-05** `lib/writers/lossy-report.cjs` produces `LOSSY_REPORT.md` per run when `--apply`/`--write-final` is set. Sections: "Survived" (preserved from source), "Approximated" (lossy mapping noted), "Dropped" (entirely lost — formulas, animations, etc.). Surfaced to user before they ship the regenerated file (printed by slash command, listed in `polish-log.md`).
-- [x] **ROUNDTRIP-06** PDF roundtrip explicitly NOT supported. When source is `.pdf` and `--apply` flag is set, error with actionable message: `"PDF roundtrip is not supported. FINAL.md is your polished output — re-typeset with pandoc / weasyprint / your preferred markdown→PDF tool. See README §Roundtrip for rationale."` Without flag, behavior unchanged (FINAL.md emitted, no error).
-- [x] **ROUNDTRIP-07** Tests + per-format smoke fixtures at `tests/roundtrip.test.cjs`:
-   - Round-trip a known docx through the full pipeline (load → tumble-dry mock convergence → write FINAL.docx). Verify regenerated docx loads in `mammoth` and produces equivalent markdown within preserved-structure tolerance (heading depths match, list counts match, table dimensions match).
-   - Same for pptx (verify slide count + per-slide title text matches).
-   - Same for xlsx (verify sheet count + per-sheet table dimensions match).
-   - PDF: verify error path (loader-set source_format='pdf' + `--apply` → throws with the expected message).
-- [x] **ROUNDTRIP-08** Documentation + release:
-   - README `## Roundtrip` section: how to use `--apply`, what's preserved/dropped per format, link to LOSSY_REPORT for runtime details, explicit PDF non-support callout.
-   - CHANGELOG entry for v0.7.0.
-   - VERSION → 0.7.0; `.claude-plugin/plugin.json` + `marketplace.json` bumped.
-   - Sync to `SlanchaAi/skills/plugins/tumble-dry`.
-   - Tag `v0.7.0` and push.
+- [ ] **HEADLESS-01** `/tumble-dry` dispatches the entire convergence loop as a single headless orchestrator subagent (`tumble-dry-orchestrator` agent). Main session sees only: "starting → progress → done + report". The orchestrator does the round-by-round Task fanouts, aggregator calls, editor invocations, drift checks, history snapshots — all inside its own context. Filesystem IPC unchanged.
+- [ ] **HEADLESS-02** Orchestrator emits `.tumble-dry/<slug>/status.json` per round-phase with `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta}`. Slash command in main session polls it once per round and renders a single-line progress update.
+- [ ] **HEADLESS-03** Per-round `REPORT.md` auto-emitted at `.tumble-dry/<slug>/round-N/REPORT.md`: 1-paragraph summary, top-3 material findings, drift snapshot, what the editor changed. Final `REPORT.md` at `.tumble-dry/<slug>/REPORT.md` rolls them up at convergence.
+
+### Batch input native (eliminates 17× ceremony)
+
+- [ ] **BATCH-01** `/tumble-dry` accepts globs and directories. Detects N input files, treats them as a batch.
+- [ ] **BATCH-02** Shared audience inference: ONE `audience-inferrer` Task call seeded with concatenated artifact summaries → one panel applied to all N files. Override per-file via `--per-file-audience` flag.
+- [ ] **BATCH-03** Per-file auditor: each file gets its own `assumption-auditor` call (premises differ even when audience shared).
+- [ ] **BATCH-04** Per-file reviewer waves dispatched in parallel batches across files (panel × N files = panel*N Task calls per round, all in ONE assistant turn from the orchestrator).
+- [ ] **BATCH-05** Batch run dir: `.tumble-dry/<batch-slug>/` with per-file subdirs (`<batch-slug>/<file-slug>/...`); shared `voice-refs/` symlinks; one shared `polish-log.md` summarizing all files.
+
+### Resume + index (rescue orphaned runs)
+
+- [ ] **STATUS-01** `tumble-dry status` lists all runs in `.tumble-dry/` with columns: `slug | round | converged | material | timestamp`. Exit 0 if all clean; 1 if any unconverged runs exist. Highlights orphans (no `status.json` updates in >1 hour).
+- [ ] **STATUS-02** `tumble-dry resume <slug>` picks up an interrupted run mid-round. Re-emits the orchestrator subagent with `--resume-from-round N`. Detects partial round (some critiques on disk but no aggregate) and finishes the round before deciding next.
+
+### Pre-flight check
+
+- [ ] **DRYRUN-01** `/tumble-dry --dry-run <artifact>` and `bin/tumble-dry-loop.cjs --dry-run` run init + audience inference + assumption audit only, then exit. Prints inferred personas + load-bearing assumptions. Costs ~1 audience-inferrer + 1 auditor call per file. Lets users tweak before committing to N reviewer waves. Includes a `## Estimated cost` block (token estimate × current model price for the full run).
+
+### Zero-config first run
+
+- [ ] **CANARY-01** When no `.tumble-dry.yml` exists, infer `voice_refs` from `git log --author "$(git config user.name)" --pretty=format:%H` recent commits in repo. Sample diffs for prose-rich files (README, docs/, blog/, *.md). Auto-detect artifact type via existing persona library detection. Default panel from `personas/configs.json`. Print a one-line "first run — using these defaults: voice_refs=git_history(N=K commits), panel=<size>" notice.
+- [ ] **CANARY-02** First-run setup is non-blocking: tumble-dry runs immediately with inferred defaults. User can later `tumble-dry config init` to dump the inferred config to `.tumble-dry.yml` for editing. No yaml cliff.
+
+### Discoverability
+
+- [ ] **SKILL-01** Register `/tumble-dry` as a discoverable Skill in `.claude-plugin/marketplace.json` (currently only declared as command). Other agents can chain via `Skill(skill="tumble-dry", args="<artifact> --dry-run")` rather than hand-executing the slash-command body.
+- [ ] **SKILL-02** Add `description:` and `argument-hint:` to the Skill registration so it appears correctly in skill listings + AskUserQuestion menus.
+
+### Architectural reversal (honest record-keeping)
+
+- [ ] **REVERSAL-01** Update Phase 1 `ARCHITECTURE.md` and v0.5.0 commits with an addendum: slash command is now a thin dispatch wrapper, not the orchestrator. Document why (real-dogfood evidence: 400KB+ of Task-dispatch noise floods main session). Keep historical record honest. Add CHANGELOG entry.
+
+### Release
+
+- [ ] **RELEASE-01** README rewrite emphasizing the new entry-point UX (batch input, dry-run, status, resume). Rewrite Quickstart from scratch — current one assumes single-file polishing.
+- [ ] **RELEASE-02** Examples directory: add `examples/batch-polish/README.md` demonstrating polishing a directory + the per-round REPORT.md output.
+- [ ] **RELEASE-03** CHANGELOG v0.8.0 entry. VERSION + plugin.json + marketplace.json bumped. Tag pushed. SlanchaAi marketplace synced.
+- [ ] **RELEASE-04** Tag v0.7.0 retroactively (ROUNDTRIP code already shipped to main, just ungated). Push.
 
 ---
 
 ## v2 (deferred — not in this milestone)
 
-- **MULTI-LLM-01** OpenAI / Gemini / local-model dispatch as alternatives to Anthropic. Anthropic-only through v0.7. Targeting v0.8+.
-- **VOICE-FT-01** Personal fine-tuned voice model swap-in. Awaiting completion of the user's separate corpus project.
-- **WEB-UI-01** / **REAL-USER-01** Anti-features per PROJECT.md philosophy.
+- **MULTI-LLM-01** OpenAI / Gemini / local-model dispatch. Anthropic-only through v0.8. Targeting v0.9+.
+- **VOICE-FT-01** Personal fine-tuned voice model. Awaiting external corpus project.
+- **WEB-UI-01** / **REAL-USER-01** Anti-features per PROJECT.md.
 
-## Out of Scope (explicit exclusions, this milestone)
+## Out of Scope (this milestone)
 
-- **PDF roundtrip** — Explicitly errors. Markdown→PDF is a different rendering problem with multiple acceptable third-party tools (pandoc, weasyprint, typst).
-- **Lossless roundtrip** — Not achievable from a markdown projection. v0.7 is honestly lossy; LOSSY_REPORT.md tells the user what they're losing.
-- **Roundtrip as default** — Manual re-apply remains default. `--apply` is opt-in.
+- **Per-file audience inference as default** — Always shared by default. `--per-file-audience` is opt-in. Users polishing 17 files want one panel, not 17 different panels.
+- **Cross-file finding dedup** — Each file's findings stay scoped to that file. Cross-file deduplication is interesting but not v0.8 (would change persona behavior).
+- **Streaming progress to stdout** — Status comes via filesystem polling + slash-command renders. Stdout streaming from a subagent is a Claude Code limitation (subagent context is isolated); polling is the workaround.
 
 ---
 
@@ -49,8 +73,15 @@
 
 | REQ-ID | Phase |
 |--------|-------|
-| ROUNDTRIP-01..08 | Phase 7 |
+| HEADLESS-01..03 | Phase 8 |
+| BATCH-01..05 | Phase 8 |
+| STATUS-01..02 | Phase 8 |
+| DRYRUN-01 | Phase 8 |
+| CANARY-01..02 | Phase 8 |
+| SKILL-01..02 | Phase 8 |
+| REVERSAL-01 | Phase 8 |
+| RELEASE-01..04 | Phase 8 |
 
 ---
 
-*Defined: 2026-04-15 during v0.7 milestone init.*
+*Defined: 2026-04-15 in response to PM dogfood feedback.*

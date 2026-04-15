@@ -27,19 +27,31 @@ A solo author can simulate publishing-day pushback in 5–15 minutes per round a
 - ✓ **FORMAT-01..07** Office format ingestion (.docx via mammoth+turndown, .pptx/.xlsx/.pdf via officeparser, unpdf fallback) + typed-result loader contract + structural boundary markers + ROUNDTRIP_WARNING surface + package.json with optionalDependencies — v0.5.2
 - ✓ **CODE-01..07** Code as first-class artifact: linguist-js detection + web-tree-sitter (WASM) AST drift + signature_changed permanent structural flag + language style anchors + editor-code agent + reviewer code-mode branch + verify_cmd config gate — v0.6.0
 - ✓ **QOL-01..03** Scenario-shaped --help, README polish, examples/{office-format,code} READMEs, CHANGELOG.md — v0.6.0
+- ✓ **ROUNDTRIP-01..08** Opt-in office-format roundtrip (docx/pptx/xlsx via docx+pptxgenjs+exceljs) + LOSSY_REPORT.md + PDF guard rail — v0.7.0 (committed, not yet tagged; superseded as next-shippable by v0.8 UX rebuild based on dogfood feedback)
 
 ### Active
 
-<!-- v0.7 milestone — ROUNDTRIP -->
+<!-- v0.8 milestone — UX rebuild from real dogfood feedback (PM canary on tumble-dry itself). -->
+<!-- Architectural reversal: Phase 1 ARCHITECTURE.md said "slash IS orchestrator (NOT subagent)" for visibility. -->
+<!-- Real dogfood proved visibility ≠ value when it's 400KB of Task dispatches in the main session. -->
+<!-- Loop now runs in a headless orchestrator subagent that emits per-round reports back to main session. -->
 
-- [ ] **ROUNDTRIP-01** Opt-in flag `--apply` (slash command) / `--write-final` (CLI). Default behavior unchanged: FINAL.md only + manual re-apply hint. With flag, write `FINAL.<ext>` alongside FINAL.md by re-rendering markdown into the source format.
-- [ ] **ROUNDTRIP-02** `.docx` writer using `docx` npm lib. Preserve heading levels (H1-H6), paragraphs, lists (ordered + unordered), simple tables, inline emphasis (bold/italic/code). Lossy: complex layouts, images, embedded objects, comments, track-changes. Document losses in LOSSY_REPORT.md.
-- [ ] **ROUNDTRIP-03** `.pptx` writer using `pptxgenjs`. Re-render each `<!-- slide:N -->` boundary as one slide; H2 → title, body → bullets/text. Lossy: original templates, animations, embedded media, slide masters, speaker notes (preserved if present in source markdown, else dropped).
-- [ ] **ROUNDTRIP-04** `.xlsx` writer using `exceljs` (NOT SheetJS — same CVE rationale as ingestion). Re-render each `<!-- sheet:Name -->` markdown table as one sheet. Lossy: formulas (markdown table can't carry them), pivot tables, charts, conditional formatting, named ranges.
-- [ ] **ROUNDTRIP-05** `LOSSY_REPORT.md` per run when `--apply` used: lists what survived, what was dropped, what was approximated. Surface to user before they ship the regenerated file.
-- [ ] **ROUNDTRIP-06** PDF roundtrip: explicitly NOT supported. When source is `.pdf` and `--apply` set, error with actionable message: "PDF roundtrip is not supported. Use FINAL.md and re-typeset, or use a markdown→PDF tool of your choice (pandoc, weasyprint, etc.)."
-- [ ] **ROUNDTRIP-07** Tests + per-format smoke fixtures. Round-trip a known docx, verify regenerated docx loads in mammoth and produces equivalent markdown (within preserved-structure tolerance).
-- [ ] **ROUNDTRIP-08** README + CHANGELOG entries; v0.7.0 version bump; SlanchaAi marketplace sync.
+- [ ] **HEADLESS-01** `/tumble-dry` dispatches the entire convergence loop as a single headless orchestrator subagent (`tumble-dry-orchestrator` agent). Main session sees only: "starting → progress → done + report.md". The orchestrator does the round-by-round Task fanouts, aggregator calls, editor invocations, drift checks, history snapshots — all inside its own context. Filesystem IPC unchanged.
+- [ ] **HEADLESS-02** Orchestrator emits `.tumble-dry/<slug>/status.json` per round with `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta}`. Slash command in main session polls it once per round and renders a single-line progress update.
+- [ ] **HEADLESS-03** Per-round REPORT.md auto-emitted at `.tumble-dry/<slug>/round-N/REPORT.md`: 1 paragraph summary, top 3 material findings, drift snapshot, what the editor changed. Surfaced to main session via `cat`. Final REPORT.md at `.tumble-dry/<slug>/REPORT.md` rolls them up at convergence.
+- [ ] **BATCH-01** `/tumble-dry` accepts globs (`/tumble-dry "site/copy/*.md"`) and directories (`/tumble-dry site/copy/`). Detects N input files, treats them as a batch.
+- [ ] **BATCH-02** Shared audience inference: ONE `audience-inferrer` Task call seeded with concatenated artifact summaries → one panel applied to all N files. (Override per-file via `--per-file-audience` flag.)
+- [ ] **BATCH-03** Per-file auditor: each file gets its own `assumption-auditor` call (premises differ per file even when audience is shared).
+- [ ] **BATCH-04** Per-file reviewer waves dispatched in parallel batches across files (panel × N files = panel*N Task calls per round, all in ONE assistant turn from the orchestrator).
+- [ ] **BATCH-05** Batch run dir: `.tumble-dry/<batch-slug>/` with per-file subdirs (`<batch-slug>/<file-slug>/...`); shared `voice-refs/` symlinks; one shared `polish-log.md` summarizing all files.
+- [ ] **STATUS-01** `tumble-dry status` lists all runs in `.tumble-dry/` with `slug | round | converged | material | timestamp` columns. Exit 0 if any unconverged runs exist; 1 if all clean.
+- [ ] **STATUS-02** `tumble-dry resume <slug>` picks up an interrupted run mid-round. Re-emits the orchestrator subagent dispatch with `--resume-from-round N` flag so it picks up where it stopped.
+- [ ] **DRYRUN-01** `/tumble-dry --dry-run <artifact>` runs init + audience inference + assumption audit only, then exits. Prints inferred personas + load-bearing assumptions. Costs ~1 audience-inferrer + 1 auditor call per file. Lets users tweak before committing to N reviewer waves.
+- [ ] **CANARY-01** Zero-config first run: when no `.tumble-dry.yml` exists, infer `voice_refs` from `git log --author "$(git config user.name)" --pretty=%H` recent commits in repo (sample diffs for prose-rich files: README, docs/, blog/). Auto-detect artifact type via existing persona library detection. Default panel from configs.json. Print a one-line "first run — using these defaults" notice.
+- [ ] **CANARY-02** First-run setup is non-blocking: tumble-dry runs immediately with inferred defaults; user can later create `.tumble-dry.yml` to override. No yaml cliff.
+- [ ] **SKILL-01** Register `/tumble-dry` as a discoverable Skill in `marketplace.json` so other agents can chain it via `Skill(skill="tumble-dry", args="<artifact> --dry-run")` rather than hand-executing the slash command body.
+- [ ] **SKILL-02** Add `description:` and `argument-hint:` to the Skill registration so it appears correctly in skill listings + AskUserQuestion menus.
+- [ ] **REVERSAL-01** Update Phase 1 ARCHITECTURE.md and v0.5.0 commits with an addendum noting the reversal: slash command is now a thin dispatch wrapper, not the orchestrator. Document why (real-dogfood evidence). Keep historical record honest.
 
 ### Out of Scope
 
