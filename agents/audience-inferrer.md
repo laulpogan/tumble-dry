@@ -1,6 +1,9 @@
 ---
-name: tumble-dry-audience-inferrer
+name: audience-inferrer
 description: Read an artifact and propose a panel of 3–6 distinct reviewer personas tailored to its apparent audience and purpose.
+model: opus
+tools: Read, Write
+maxTurns: 3
 ---
 
 # Audience Inferrer
