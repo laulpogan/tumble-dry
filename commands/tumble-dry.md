@@ -1,6 +1,6 @@
 ---
 description: Polish content via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings.
-argument-hint: <filepath> [--audience "..."] [--panel-size N] [--no-auto-redraft] [--backend api|gastown]
+argument-hint: <filepath> [--audience "..."] [--panel-size N] [--no-auto-redraft]
 ---
 
 # /tumble-dry
@@ -23,14 +23,13 @@ fi
 
 Parse `$ARGUMENTS` into:
 - `ARTIFACT` — first positional arg (or `--paste` to open $EDITOR on a tempfile)
-- Flag passthroughs: `--audience`, `--panel-size`, `--no-auto-redraft`, `--backend`
+- Flag passthroughs: `--audience`, `--panel-size`, `--no-auto-redraft`
 
 Then:
 
 ```bash
 node "$TD_HOME/bin/tumble-dry-loop.cjs" "$ARTIFACT" \
   ${PANEL_SIZE:+--panel-size "$PANEL_SIZE"} \
-  ${BACKEND:+--backend "$BACKEND"} \
   ${NO_AUTO_REDRAFT:+--no-auto-redraft}
 ```
 
@@ -45,7 +44,9 @@ On completion, show the user:
 
 ## Requirements
 
-`ANTHROPIC_API_KEY` must be set (or written to `~/.anthropic/api_key`). Tumble-dry dispatches directly to the Anthropic API by default; gastown is opt-in via `dispatch_backend: gastown` in `.tumble-dry.yml`.
+This slash command currently shells out to `bin/tumble-dry-loop.cjs`, which uses the Anthropic API directly. That requires `ANTHROPIC_API_KEY` (env var or `~/.anthropic/api_key`).
+
+**v0.5.0 (in progress)** will rewrite this command to dispatch each agent via parallel `Task(subagent_type=...)` calls inside your active Claude Code session — no API key required, inherits your session auth. Until then, the API-key path is the only option for the loop driver. (You can still invoke individual subagents in this session manually using the `Task` tool with the agent files in `agents/`.)
 
 If no artifact argument: read from stdin (useful for `pbpaste | /tumble-dry`).
 

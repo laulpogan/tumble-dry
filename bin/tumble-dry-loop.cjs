@@ -8,7 +8,11 @@
  *        → finalize on convergence OR max_rounds hit.
  *
  * Usage:
- *   tumble-dry-loop <artifact-path> [--auto-redraft] [--backend api|gastown|auto] [--voice-refs dir] [--panel-size N]
+ *   tumble-dry-loop <artifact-path> [--auto-redraft] [--panel-size N]
+ *
+ * Requires ANTHROPIC_API_KEY. For Claude Code session-auth (no key required),
+ * use the /tumble-dry slash command instead — it dispatches each agent as
+ * parallel Task subagents inside your active Claude Code session.
  *
  * Exits 0 on clean convergence, 1 on max_rounds cap, 2 on error.
  */
@@ -24,13 +28,12 @@ const { voiceDriftReport } = require('../lib/voice.cjs');
 const { extractPersonas } = require('../lib/reviewer-brief.cjs');
 
 function parseArgs(argv) {
-  const out = { artifact: null, autoRedraft: true, backend: null, panelSize: null };
+  const out = { artifact: null, autoRedraft: true, panelSize: null };
   let i = 0;
   while (i < argv.length) {
     const a = argv[i];
     if (a === '--auto-redraft') { out.autoRedraft = true; i++; }
     else if (a === '--no-auto-redraft') { out.autoRedraft = false; i++; }
-    else if (a === '--backend') { out.backend = argv[++i]; i++; }
     else if (a === '--panel-size') { out.panelSize = parseInt(argv[++i], 10); i++; }
     else if (!out.artifact) { out.artifact = a; i++; }
     else i++;
@@ -121,16 +124,15 @@ async function runEditor({ slug, roundN, roundDir, runDir, artifactAbs, config }
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.artifact) {
-    console.error('usage: tumble-dry-loop <artifact-path> [--backend api|gastown|auto] [--panel-size N]');
+    console.error('usage: tumble-dry-loop <artifact-path> [--panel-size N] [--no-auto-redraft]');
+    console.error('  requires ANTHROPIC_API_KEY. For session-auth use /tumble-dry inside Claude Code.');
     process.exit(2);
   }
-  if (args.backend) process.env.TUMBLE_DRY_BACKEND = args.backend;
 
   const cwd = process.cwd();
   const config = loadConfig(cwd);
   if (args.panelSize) config.panel_size = args.panelSize;
-  const backend = selectBackend(config);
-  log(`backend=${backend} panel_size=${config.panel_size} convergence_threshold=${config.convergence_threshold} max_rounds=${config.max_rounds}`);
+  log(`backend=api panel_size=${config.panel_size} convergence_threshold=${config.convergence_threshold} max_rounds=${config.max_rounds}`);
 
   // Init or resume
   const { slug, runDir, artifactAbs } = initRun(cwd, args.artifact);

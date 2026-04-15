@@ -1,8 +1,8 @@
 # tumble-dry
 
-**Polish content through simulated public contact.** Parallel reviewer personas critique in-character, an assumption auditor surfaces hidden premises, a voice-preserving editor redrafts, and the loop runs until reviewers converge.
+**Polish written work through simulated public contact.** Parallel reviewer personas critique in-character, an assumption auditor surfaces hidden premises, a voice-preserving editor redrafts, and the loop runs until reviewers converge.
 
-Works on docs, copy, ads, blogs, markdown decks, financial models, pitch decks, strategy memos. Office formats (.docx / .pptx / .xlsx / .pdf) coming in v0.5.
+Works on docs, copy, ads, blogs, markdown decks, financial models, pitch decks, strategy memos, and **code** (any text-based artifact). Office formats (.docx / .pptx / .xlsx / .pdf) coming in v0.5.2.
 
 ---
 
@@ -166,7 +166,7 @@ If the loop never converges, the structural alert is the answer: editor rewrites
 Full autonomous convergence loop:
 
 ```bash
-node bin/tumble-dry-loop.cjs <artifact> [--backend api|gastown] [--panel-size N] [--no-auto-redraft]
+node bin/tumble-dry-loop.cjs <artifact> [--panel-size N] [--no-auto-redraft]
 ```
 
 Data-plane subcommands (for custom orchestration):
@@ -201,12 +201,13 @@ The drift report classifies every sentence in the redraft:
 - **Before fundraising.** Pitch deck + financial model. Persona library covers VC / CFO / Layman / Series-A out of the box.
 - **Before launch.** Website copy + pricing page against prospect / technical-buyer / non-technical-buyer.
 - **Before major pivots.** Strategy doc against skip-level exec / engineer / cross-functional partner / devil's advocate.
+- **Before merging non-trivial code.** Pre-PR self-review against staff-eng / security / on-call SRE / new-hire personas. Catches what tests and linters won't (architectural drift, premature abstraction, missing failure mode). Currently treats code as plaintext; v0.6.0 adds language-aware features.
 - **After competitive research.** Re-run on positioning vs the new landscape.
 - **Quarterly.** Investor update, board deck, OKR memo.
 
 ## When NOT to use this
 
-- **Code review.** Use tests, types, linters.
+- **Tests + types + linters.** Tumble-dry complements them; it does not replace them. Run them too.
 - **Design / UX review.** Use real users.
 - **Product decisions.** Use customer interviews.
 - **Speed > rigor.** A polish loop is 5–15 minutes per round.
@@ -234,8 +235,11 @@ See [`examples/dogfood-2026-04-14/`](examples/dogfood-2026-04-14/) for a complet
 v0.4.0 — Non-destructive history + per-dispatch reasoning traces. Built on v0.3.0's persona libraries + structural-finding detection and v0.2.0's API-first convergence loop with prompt caching.
 
 **Roadmap:**
-- **v0.4.1** — Comprehensive persona library + runbook by artifact type and industry (research in flight).
-- **v0.5.0** — Office format ingestion (.docx, .pptx, .xlsx, .pdf via mammoth, SheetJS, OOXML parsing, pdf-parse, pandoc fallback). Source-untouched still applies; FINAL.md ships as markdown.
+- **v0.4.2** (this release) — Gastown backend removed; voice now self-defaults to the source's own voice when no `voice_refs` configured; code added as supported artifact type.
+- **v0.5.0** — Claude Code-native dispatch: `/tumble-dry` slash command spawns each agent as a parallel `Task` subagent inside your active session. No `ANTHROPIC_API_KEY` required. Inherits your Claude Code session auth. The Node API path stays as the headless / CI fallback.
+- **v0.5.1** — Comprehensive persona library + runbook by artifact type and industry, including code-review personas (research in flight).
+- **v0.5.2** — Office format ingestion (.docx, .pptx, .xlsx, .pdf via mammoth, SheetJS, OOXML parsing, pdf-parse, pandoc fallback). Source-untouched still applies; FINAL.md ships as markdown.
+- **v0.6.0** — Code-aware features: language detection, AST-aware drift, language-specific style anchors (PEP 8, Effective Go, Rust API guidelines), code-review persona library.
 
 ## License
 

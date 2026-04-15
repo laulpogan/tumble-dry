@@ -20,7 +20,7 @@
 const fs = require('fs');
 const path = require('path');
 const { loadConfig } = require('../lib/config.cjs');
-const { sampleExcerpts, voiceDriftReport } = require('../lib/voice.cjs');
+const { sampleExcerpts, getVoiceExcerpts, voiceDriftReport } = require('../lib/voice.cjs');
 const { aggregateRound, renderAggregate, aggregateJson } = require('../lib/aggregator.cjs');
 const { initRun, roundDir, currentRound } = require('../lib/run-state.cjs');
 const {
@@ -70,8 +70,21 @@ switch (cmd) {
   case 'sample-voice': {
     const cfg = loadConfig(cwd);
     const count = parseInt(argv[1] || cfg.panel_size || '4', 10);
-    const excerpts = sampleExcerpts(cfg.voice_refs, count);
-    console.log(JSON.stringify({ voice_refs: cfg.voice_refs, excerpts }, null, 2));
+    const slug = argv[2];
+    let voiceAnchor = null;
+    if (slug) {
+      const runDir = path.join(cwd, '.tumble-dry', slug);
+      if (fs.existsSync(runDir)) {
+        const original = path.join(runDir, 'history', 'round-0-original.md');
+        if (fs.existsSync(original)) voiceAnchor = original;
+        else {
+          const apath = path.join(runDir, 'artifact.path');
+          if (fs.existsSync(apath)) voiceAnchor = fs.readFileSync(apath, 'utf-8').trim();
+        }
+      }
+    }
+    const { source, excerpts } = getVoiceExcerpts(cfg.voice_refs, voiceAnchor, count);
+    console.log(JSON.stringify({ voice_refs: cfg.voice_refs, source, excerpts }, null, 2));
     break;
   }
   case 'aggregate': {
@@ -233,7 +246,7 @@ switch (cmd) {
         personaSlug: p.slug,
         personaBlock: p.block,
         assumptionAudit,
-        voiceExcerpts: sampleExcerpts(cfg.voice_refs, 4),
+        voiceExcerpts: getVoiceExcerpts(cfg.voice_refs, artifactPath, 4).excerpts,
         roundNumber: round,
         reviewerAgentPath,
       });
@@ -256,11 +269,17 @@ switch (cmd) {
     if (!fs.existsSync(aggPath)) die(`aggregate.md not found — run aggregate first`);
     const aggregateMarkdown = fs.readFileSync(aggPath, 'utf-8');
     const cfg = loadConfig(cwd);
-    const excerpts = sampleExcerpts(cfg.voice_refs, 4);
+    // Self-voice fallback when no voice_refs configured: sample from the
+    // original source. Editor's job becomes "preserve the source's own voice"
+    // rather than "imitate an external corpus."
+    const originalSnapshot = path.join(runDir, 'history', 'round-0-original.md');
+    const voiceAnchor = fs.existsSync(originalSnapshot) ? originalSnapshot : artifactPath;
+    const { source: voiceSource, excerpts } = getVoiceExcerpts(cfg.voice_refs, voiceAnchor, 4);
     const brief = buildEditorBrief({
       artifactText,
       aggregateMarkdown,
       voiceExcerpts: excerpts,
+      voiceSource,
       agentPath: path.join(AGENTS_DIR, 'editor.md'),
       roundNumber: round,
     });
