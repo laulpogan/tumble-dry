@@ -1,0 +1,25 @@
+{
+  "name": "tumble-dry",
+  "version": "0.5.2",
+  "description": "Polish written work through simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings.",
+  "private": true,
+  "type": "commonjs",
+  "license": "MIT",
+  "author": "Paul Logan",
+  "homepage": "https://github.com/laulpogan/tumble-dry",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node tests/harden.test.cjs && node tests/validate-plugin.test.cjs && node tests/format.test.cjs",
+    "test:harden": "node tests/harden.test.cjs",
+    "test:format": "node tests/format.test.cjs",
+    "validate-plugin": "node bin/validate-plugin.cjs"
+  },
+  "optionalDependencies": {
+    "mammoth": "^1.7.0",
+    "turndown": "^7.2.0",
+    "officeparser": "^6.0.7",
+    "unpdf": "^0.13.1"
+  }
+}
