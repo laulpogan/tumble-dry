@@ -1,6 +1,9 @@
 ---
-name: tumble-dry-editor
+name: editor
 description: Redraft the artifact addressing aggregated material and minor findings, constrained by the author's voice samples. Flag any rewrite that would flatten voice rather than execute it.
+model: opus
+tools: Read, Write
+maxTurns: 5
 ---
 
 # Editor
