@@ -103,6 +103,41 @@ test('initBatch creates per-file subdirs under a batch dir', async () => {
   assert.equal(manifest.files.length, 2);
 });
 
+test('GLOB-01: expandInputs with glob *.md matches only top-level markdown', () => {
+  const dir = tmpdir();
+  fs.writeFileSync(path.join(dir, 'a.md'), '# a');
+  fs.writeFileSync(path.join(dir, 'b.md'), '# b');
+  fs.writeFileSync(path.join(dir, 'c.md'), '# c');
+  fs.writeFileSync(path.join(dir, 'skip.txt'), 'not md');
+  fs.mkdirSync(path.join(dir, 'sub'));
+  fs.writeFileSync(path.join(dir, 'sub', 'd.md'), '# d');
+  const files = expandInputs(dir, ['*.md']);
+  assert.equal(files.length, 3, `expected 3 top-level .md files, got ${files.length}`);
+  assert.ok(files.every(f => f.endsWith('.md')));
+  // Should not include sub/d.md (single * doesn't cross /)
+  assert.ok(!files.some(f => f.includes('sub')));
+});
+
+test('GLOB-02: expandInputs with ** pattern finds nested files', () => {
+  const dir = tmpdir();
+  fs.writeFileSync(path.join(dir, 'a.md'), '# a');
+  fs.mkdirSync(path.join(dir, 'docs'));
+  fs.writeFileSync(path.join(dir, 'docs', 'b.md'), '# b');
+  fs.mkdirSync(path.join(dir, 'docs', 'deep'));
+  fs.writeFileSync(path.join(dir, 'docs', 'deep', 'c.md'), '# c');
+  const files = expandInputs(dir, ['**/*.md']);
+  assert.ok(files.length >= 3, `expected at least 3 .md files, got ${files.length}`);
+});
+
+test('GLOB-01: brace expansion {md,txt} matches both extensions', () => {
+  const dir = tmpdir();
+  fs.writeFileSync(path.join(dir, 'a.md'), '# a');
+  fs.writeFileSync(path.join(dir, 'b.txt'), 'b');
+  fs.writeFileSync(path.join(dir, 'c.js'), 'c');
+  const files = expandInputs(dir, ['*.{md,txt}']);
+  assert.equal(files.length, 2);
+});
+
 test('initBatch derives batch slug from common parent directory name', async () => {
   const dir = tmpdir();
   const sub = path.join(dir, 'site-copy');
