@@ -209,7 +209,7 @@ switch (cmd) {
     if (!critiques.length) die(`no critique-*.md files in ${rDir}`);
     const cfg = loadConfig(cwd);
     const agg = aggregateRound(critiques, { runDir, currentRound: round });
-    const { markdown, converged } = renderAggregate(agg, cfg, round);
+    const { markdown, converged } = renderAggregate(agg, cfg, round, { runDir });
     fs.writeFileSync(path.join(rDir, 'aggregate.md'), markdown, 'utf-8');
     fs.writeFileSync(path.join(rDir, 'aggregate.json'), JSON.stringify(aggregateJson(agg, converged), null, 2), 'utf-8');
     console.log(JSON.stringify({
@@ -846,6 +846,22 @@ switch (cmd) {
     console.log(JSON.stringify(inferred, null, 2));
     break;
   }
+  case 'register': {
+    // REGISTER-04: manually register a structural finding.
+    const slug = argv[1];
+    const findingSummary = argv.slice(2).join(' ');
+    if (!slug || !findingSummary) die('usage: register <slug> <finding-summary>');
+    const runDir = findRunDir(slug);
+    const { manualRegister } = require('../lib/structural-register.cjs');
+    const result = manualRegister(runDir, findingSummary);
+    if (result.added) {
+      console.log(`Registered: "${findingSummary}" (status: acknowledged)`);
+    } else {
+      console.log(`Already registered (matching entry found).`);
+    }
+    console.log(JSON.stringify({ added: result.added, register_count: result.register.length }, null, 2));
+    break;
+  }
   case 'commit-round': {
     // GIT-02: commit round artifacts with convergence metadata.
     const slug = argv[1];
@@ -886,6 +902,8 @@ switch (cmd) {
     console.error('  brief-reviewer <slug> <round> <persona-slug>');
     console.error('  brief-editor <slug> <round>');
     console.error('  extract-redraft <slug> <round>');
+    console.error('  register <slug> <finding-summary>');
+    console.error('  apply-patch <slug>');
     console.error('  finalize <slug> [--apply] [--apply-to-source]');
     process.exit(cmd ? 2 : 0);
 }
