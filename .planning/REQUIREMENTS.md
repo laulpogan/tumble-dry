@@ -1,71 +1,57 @@
-# Requirements — Milestone v0.8 (UX Rebuild)
+# Requirements — Milestone v0.10 (Polish Pipeline)
 
-**Source:** PM dogfood feedback on real canary run of tumble-dry on tumble-dry's own work.
-**Scope:** Headless orchestrator subagent + per-round reports (#1) + batch input (#2) + `tumble-dry status`/`resume` (#3) + `--dry-run` (#4) + zero-config canary (#5) + Skill registration (#6).
-**Out-of-scope:** MULTI-LLM, VOICE-FT, WEB-UI, REAL-USER (still in v2 deferred per PROJECT.md).
-**Prior milestones (v0.6.0, v0.7.0):** archived at `.planning/milestones/`.
+**Source:** 18-artifact field report (docs/FIELD_REPORT_2026_04_15_18_ARTIFACTS.md) + archaeologist integration priority.
+**Prior milestones:** archived at `.planning/milestones/`.
 
 ---
 
 ## v1 Requirements (this milestone)
 
-### Headless orchestrator + status surfacing (highest leverage)
+### Git History Generation (HIGH PRIORITY — archaeologist integration)
 
-- [x] **HEADLESS-01** `/tumble-dry` dispatches the entire convergence loop as a single headless orchestrator subagent (`tumble-dry-orchestrator` agent). Main session sees only: "starting → progress → done + report". The orchestrator does the round-by-round Task fanouts, aggregator calls, editor invocations, drift checks, history snapshots — all inside its own context. Filesystem IPC unchanged.
-- [x] **HEADLESS-02** Orchestrator emits `.tumble-dry/<slug>/status.json` per round-phase with `{round, phase, reviewers_dispatched, reviewers_returned, material_count, structural_count, drift_score, converged, eta}`. Slash command in main session polls it once per round and renders a single-line progress update.
-- [x] **HEADLESS-03** Per-round `REPORT.md` auto-emitted at `.tumble-dry/<slug>/round-N/REPORT.md`: 1-paragraph summary, top-3 material findings, drift snapshot, what the editor changed. Final `REPORT.md` at `.tumble-dry/<slug>/REPORT.md` rolls them up at convergence.
+- [ ] **GIT-01** Each tumble-dry run auto-creates a branch `tumble-dry/<slug>` (or `tumble-dry/<batch-slug>`) at init time. All round artifacts committed per-round with convergence metadata in commit messages.
+- [ ] **GIT-02** Per-round commit message format: `tumble-dry: round N redraft (<slug>) — M material, K structural, drift=X.XX, converged={yes|no}`. Machine-parseable by archaeologist.
+- [ ] **GIT-03** On convergence (or forced-final), FINAL.md committed on the branch. If `--apply-to-source` set, source file update committed too.
+- [ ] **GIT-04** Auto-create local PR via `gh pr create` (when gh available) or print the command for manual execution. PR title: `tumble-dry: polish <slug>`. PR body: final REPORT.md content.
+- [ ] **GIT-05** Batch mode: one branch per batch with per-file × per-round commits. Squash-merge candidate. Branch name: `tumble-dry/<batch-slug>`.
+- [ ] **GIT-06** `--no-git` flag to disable git integration (for users who don't want branches/commits).
 
-### Batch input native (eliminates 17× ceremony)
+### Apply to Source
 
-- [x] **BATCH-01** `/tumble-dry` accepts globs and directories. Detects N input files, treats them as a batch.
-- [x] **BATCH-02** Shared audience inference: ONE `audience-inferrer` Task call seeded with concatenated artifact summaries → one panel applied to all N files. Override per-file via `--per-file-audience` flag.
-- [x] **BATCH-03** Per-file auditor: each file gets its own `assumption-auditor` call (premises differ even when audience shared).
-- [x] **BATCH-04** Per-file reviewer waves dispatched in parallel batches across files (panel × N files = panel*N Task calls per round, all in ONE assistant turn from the orchestrator).
-- [x] **BATCH-05** Batch run dir: `.tumble-dry/<batch-slug>/` with per-file subdirs (`<batch-slug>/<file-slug>/...`); shared `voice-refs/` symlinks; one shared `polish-log.md` summarizing all files.
+- [ ] **APPLY-01** `--apply-to-source` flag on slash command + CLI. After convergence, `cp FINAL.md <source-path>`. For office formats: `cp FINAL.<ext>` (if `--apply` roundtrip was also set). Committed on the tumble-dry branch per GIT-03.
+- [ ] **APPLY-02** Batch mode: applies to all converged files. Skips files that didn't converge (with warning).
 
-### Resume + index (rescue orphaned runs)
+### Structural Finding Register (solves convergence oscillation — BUG-4)
 
-- [x] **STATUS-01** `tumble-dry status` lists all runs in `.tumble-dry/` with columns: `slug | round | converged | material | timestamp`. Exit 0 if all clean; 1 if any unconverged runs exist. Highlights orphans (no `status.json` updates in >1 hour).
-- [x] **STATUS-02** `tumble-dry resume <slug>` picks up an interrupted run mid-round. Re-emits the orchestrator subagent with `--resume-from-round N`. Detects partial round (some critiques on disk but no aggregate) and finishes the round before deciding next.
+- [ ] **REGISTER-01** New file `.tumble-dry/<slug>/structural-register.json`: array of `{finding_summary, registered_at_round, status: 'acknowledged'|'deferred'|'resolved', reason}`.
+- [ ] **REGISTER-02** After each aggregate, if structural findings persist from prior round: auto-register them (status: 'acknowledged') unless they were NEW this round. Registered findings are excluded from the material count for convergence purposes — they stop re-firing.
+- [ ] **REGISTER-03** Surface register in REPORT.md: "3 structural findings acknowledged (not blocking convergence): [summaries]". User sees what was parked.
+- [ ] **REGISTER-04** `tumble-dry register <slug> <finding-summary>` CLI subcommand for manual registration mid-run.
 
-### Pre-flight check
+### Glob Expansion Fix (BUG-1)
 
-- [x] **DRYRUN-01** `/tumble-dry --dry-run <artifact>` and `bin/tumble-dry-loop.cjs --dry-run` run init + audience inference + assumption audit only, then exit. Prints inferred personas + load-bearing assumptions. Costs ~1 audience-inferrer + 1 auditor call per file. Lets users tweak before committing to N reviewer waves. Includes a `## Estimated cost` block (token estimate × current model price for the full run).
+- [ ] **GLOB-01** `lib/glob-expand.cjs` correctly expands shell globs (`*.md`, `site/copy/*.md`, `**/*.md`) via `glob` npm package or Node.js `fs.glob` (Node 22+). Falls back to manual `fs.readdirSync` + filter for older Node versions.
+- [ ] **GLOB-02** `bin/tumble-dry.cjs init` accepts glob string as artifact arg; expands and routes to initBatch when N>1.
 
-### Zero-config first run
+### Drift Hard Gate Per Type
 
-- [x] **CANARY-01** When no `.tumble-dry.yml` exists, infer `voice_refs` from `git log --author "$(git config user.name)" --pretty=format:%H` recent commits in repo. Sample diffs for prose-rich files (README, docs/, blog/, *.md). Auto-detect artifact type via existing persona library detection. Default panel from `personas/configs.json`. Print a one-line "first run — using these defaults: voice_refs=git_history(N=K commits), panel=<size>" notice.
-- [x] **CANARY-02** First-run setup is non-blocking: tumble-dry runs immediately with inferred defaults. User can later `tumble-dry config init` to dump the inferred config to `.tumble-dry.yml` for editing. No yaml cliff.
+- [ ] **DRIFT-01** When editor's content_drift exceeds `personas/configs.json[artifact_type].drift_threshold`, the redraft is split into "safe changes" (under threshold) and "structural changes" (over threshold). Structural changes surface for user confirmation before being applied.
+- [ ] **DRIFT-02** If no interactive user (headless/batch mode): structural changes auto-apply but are flagged in REPORT.md + committed separately on the git branch with a distinct commit message (`tumble-dry: round N structural redraft (drift=X.XX, exceeds threshold Y.YY)`).
 
-### Discoverability
+### Batch Dashboard
 
-- [x] **SKILL-01** Register `/tumble-dry` as a discoverable Skill in `.claude-plugin/marketplace.json` (currently only declared as command). Other agents can chain via `Skill(skill="tumble-dry", args="<artifact> --dry-run")` rather than hand-executing the slash-command body.
-- [x] **SKILL-02** Add `description:` and `argument-hint:` to the Skill registration so it appears correctly in skill listings + AskUserQuestion menus.
+- [ ] **DASH-01** `tumble-dry status` shows batch-level summary when batch runs exist: `[N/M init] [K/M converged] [J/M in-progress] [L/M forced-final]`.
+- [ ] **DASH-02** Batch-level resume: `tumble-dry resume <batch-slug>` picks up where the batch left off (skips converged files, resumes in-progress files, inits remaining files).
 
-### Architectural reversal (honest record-keeping)
+### Component Integration Mode
 
-- [x] **REVERSAL-01** Update Phase 1 `ARCHITECTURE.md` and v0.5.0 commits with an addendum: slash command is now a thin dispatch wrapper, not the orchestrator. Document why (real-dogfood evidence: 400KB+ of Task-dispatch noise floods main session). Keep historical record honest. Add CHANGELOG entry.
+- [ ] **COMP-01** `--patch` flag. After convergence, diff FINAL.md against the source and produce a unified diff patch at `.tumble-dry/<slug>/PATCH.diff`. For JSX/TSX sources: the patch applies to the component file, replacing string literals / JSX text content with the polished versions.
+- [ ] **COMP-02** `tumble-dry apply-patch <slug>` applies the patch via `git apply`. User reviews diff first.
 
 ### Release
 
-- [x] **RELEASE-01** README rewrite emphasizing the new entry-point UX (batch input, dry-run, status, resume). Rewrite Quickstart from scratch — current one assumes single-file polishing.
-- [x] **RELEASE-02** Examples directory: add `examples/batch-polish/README.md` demonstrating polishing a directory + the per-round REPORT.md output.
-- [x] **RELEASE-03** CHANGELOG v0.8.0 entry. VERSION + plugin.json + marketplace.json bumped. Tag pushed. SlanchaAi marketplace synced.
-- [x] **RELEASE-04** Tag v0.7.0 retroactively (ROUNDTRIP code already shipped to main, just ungated). Push.
-
----
-
-## v2 (deferred — not in this milestone)
-
-- **MULTI-LLM-01** OpenAI / Gemini / local-model dispatch. Anthropic-only through v0.8. Targeting v0.9+.
-- **VOICE-FT-01** Personal fine-tuned voice model. Awaiting external corpus project.
-- **WEB-UI-01** / **REAL-USER-01** Anti-features per PROJECT.md.
-
-## Out of Scope (this milestone)
-
-- **Per-file audience inference as default** — Always shared by default. `--per-file-audience` is opt-in. Users polishing 17 files want one panel, not 17 different panels.
-- **Cross-file finding dedup** — Each file's findings stay scoped to that file. Cross-file deduplication is interesting but not v0.8 (would change persona behavior).
-- **Streaming progress to stdout** — Status comes via filesystem polling + slash-command renders. Stdout streaming from a subagent is a Claude Code limitation (subagent context is isolated); polling is the workaround.
+- [ ] **REL-01** CHANGELOG v0.10.0. VERSION bump. Push + tag. SlanchaAi sync.
+- [ ] **REL-02** README update: git integration section, --apply-to-source, structural register, batch dashboard.
 
 ---
 
@@ -73,15 +59,15 @@
 
 | REQ-ID | Phase |
 |--------|-------|
-| HEADLESS-01..03 | Phase 8 |
-| BATCH-01..05 | Phase 8 |
-| STATUS-01..02 | Phase 8 |
-| DRYRUN-01 | Phase 8 |
-| CANARY-01..02 | Phase 8 |
-| SKILL-01..02 | Phase 8 |
-| REVERSAL-01 | Phase 8 |
-| RELEASE-01..04 | Phase 8 |
+| GIT-01..06 | Phase 9 |
+| APPLY-01..02 | Phase 9 |
+| REGISTER-01..04 | Phase 10 |
+| GLOB-01..02 | Phase 9 |
+| DRIFT-01..02 | Phase 10 |
+| DASH-01..02 | Phase 10 |
+| COMP-01..02 | Phase 10 |
+| REL-01..02 | Phase 10 |
 
 ---
 
-*Defined: 2026-04-15 in response to PM dogfood feedback.*
+*Defined: 2026-04-15 from 18-artifact field report + archaeologist priority.*
