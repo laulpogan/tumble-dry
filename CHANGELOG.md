@@ -2,6 +2,36 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [0.9.1] — 2026-04-15 — Research-backed persona & convergence hardening
+
+**Theme:** Nine fixes from the psychographic audit, design-thinking audit, and LLM-as-critic literature review. Persona library gains three new fields, 41 anti-persona declarations, freshness mechanism, and two inclusive-access personas. Convergence logic gains novelty checking and adversarial-agreement weighting. Reviewer agent gains anti-sycophancy escalation.
+
+### Added
+
+- **Championing trigger** field on all 243 personas — what makes each persona say "this is excellent." Captures the "gain quadrant" from IDEO empathy mapping; prevents critique-only panels. (FIX 1)
+- **Blindspot** field on all 243 personas — what each persona would typically miss. Per LLM-as-critic ablation research: explicit blindspot declaration improves critique calibration. (FIX 2)
+- **System 1 first-impression pass** — new runbook rule (§2.4) and `buildFirstImpressionBrief()` in `lib/reviewer-brief.cjs`. Round 1 gets a 30-second gut-reaction scan (hooked/confused/skeptical/bored/excited) from the end-reader proxy before full analysis. (FIX 3)
+- **`Not for:` anti-persona** line on all 41 panels — prevents panels from optimizing for the wrong audience. (FIX 4)
+- **Novelty check** in `lib/aggregator.cjs` — `checkNovelty()` compares round N material findings against round N-1 via Jaccard overlap; flags `stale_round` when >70% are paraphrases. Surfaces warning in aggregate.md. (FIX 5a)
+- **Adversarial agreement** in `lib/aggregator.cjs` — `annotateAdversarialAgreement()` marks findings raised by both believer and skeptic personas. Convergence now requires these to be resolved. (FIX 5b)
+- **Minimum 2 dissenters rule** for panels of 6+ personas — updated runbook §3.5. Single dissenters get overridden per Janis groupthink research. (FIX 6)
+- **Cross-cutting: Inclusive Access** section in `personas/library.md` with Non-Native English Reader (Kenji Nakamura) and Mobile/Constrained Reader (Daniela Ferreira). Runbook §3.6 injection rule for public-facing and mobile artifacts. (FIX 7)
+- **Persona freshness mechanism** — `Last validated: 2026-04-15` on all panels, `market_assumptions:` on 12 time-sensitive panels, runbook §5 staleness detection and `STALE_PANEL` warning. (FIX 8)
+- **Anti-sycophancy escalation** in `agents/reviewer.md` — round 3+ reviewers with <2 material findings must self-check for sycophancy creep by re-reading the original. (FIX 9)
+
+### Changed
+
+- Mandatory persona fields expanded from 4 to 6 (added championing trigger + blindspot).
+- Convergence criterion enhanced: material ≤ threshold AND no adversarial-agreement material findings AND novelty check.
+- Runbook quick-reference checklist expanded from 7 to 10 steps (first-impression, inclusive-access injection, freshness check).
+- Anti-mode-collapse check (Pitfall 16) ratio floor tightened from 4:1 to 3:2 for panels of 6+.
+
+### Research sources
+
+- `research/psychographic-audit.md` — OCEAN, cognitive bias stacking, Kahneman adversarial collaboration, Janis groupthink
+- `research/design-thinking-audit.md` — Cooper behavioral variables, JTBD, IDEO empathy mapping, inclusive design, anti-personas, persona decay
+- `research/llm-critic-literature.md` — persona fidelity, multi-agent debate, sycophancy mitigation, convergence stopping criteria
+
 ## [0.9.0] — 2026-04-15 — HARNESS-ONLY: excise API key, plain Agent() dispatch, install.sh
 
 **Theme:** Ship-blocker fix. All Anthropic API key logic removed. Product runs entirely through Claude Code session harness. Agent dispatch uses plain `Agent(prompt=...)` with no custom `subagent_type`. `install.sh` symlinks the command into `~/.claude/commands/`. `.claude-plugin/` directory removed (CC never discovered it).
