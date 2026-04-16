@@ -152,7 +152,7 @@ switch (cmd) {
     const agg = aggregateRound(critiques, { runDir, currentRound: round });
     const { markdown, converged } = renderAggregate(agg, cfg, round);
     fs.writeFileSync(path.join(rDir, 'aggregate.md'), markdown, 'utf-8');
-    fs.writeFileSync(path.join(rDir, 'aggregate.json'), JSON.stringify(aggregateJson(agg), null, 2), 'utf-8');
+    fs.writeFileSync(path.join(rDir, 'aggregate.json'), JSON.stringify(aggregateJson(agg, converged), null, 2), 'utf-8');
     console.log(JSON.stringify({
       round,
       converged,
@@ -327,9 +327,21 @@ switch (cmd) {
     const audiencePath = path.join(runDir, 'round-1', 'audience.md');
     if (!fs.existsSync(audiencePath)) die(`audience.md not found`);
     const personas = extractPersonas(fs.readFileSync(audiencePath, 'utf-8'));
-    const targets = onlySlug ? personas.filter(p => p.slug === onlySlug) : personas;
-    if (!targets.length) die(onlySlug ? `persona slug not found: ${onlySlug}` : `no personas in audience.md`);
     const cfg = loadConfig(cwd);
+    // BUG-3 fix: enforce panel_size cap. Runbook add-rules (layman, operator,
+    // mobile reader) can push the audience-inferrer past the configured cap.
+    // Trim to panel_size to prevent cost inflation (7 × 15 files × 3 rounds = 315 critiques).
+    const capSize = cfg.panel_size || 5;
+    let targets;
+    if (onlySlug) {
+      targets = personas.filter(p => p.slug === onlySlug);
+    } else {
+      targets = personas.slice(0, capSize);
+      if (personas.length > capSize) {
+        console.error(`[tumble-dry] panel capped: ${personas.length} personas → ${capSize} (panel_size=${capSize}). Use --panel-size ${personas.length} to override.`);
+      }
+    }
+    if (!targets.length) die(onlySlug ? `persona slug not found: ${onlySlug}` : `no personas in audience.md`);
     const reviewerAgentPath = path.join(AGENTS_DIR, 'reviewer.md');
     const srcMeta = readSourceFormat(runDir);
     const written = [];
