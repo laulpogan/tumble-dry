@@ -127,9 +127,15 @@ Add the operator (CFO, eng lead, ops manager, on-call SRE, integration lead, cus
 
 If the user supplied an `audience_override` string in the brief, honor it: quote it verbatim in the emitted `audience.md`, then adjust the panel by **adding** the override audience as a named persona (don't drop library picks). If the override contradicts the detected type (e.g., "pitch this to my grandmother" on a Series A deck), add Garrett Liu's angel persona as the closest library analog and keep the detected-type experts.
 
-### 3.5 Anti-mode-collapse check
+### 3.5 Anti-mode-collapse check (with minimum dissenter rule)
 
-Before emitting, count believers vs. skeptics in the final panel. If the ratio is worse than 4:1 in either direction, swap the last-added persona for the missing pole. This is **Pitfall 16 enforcement** and is non-negotiable.
+Before emitting, count believers vs. skeptics in the final panel.
+
+**For panels of 6+ personas:** require **at least 2 skeptics** (not just 1). A single dissenter gets socially overridden even in structural-dissent systems (Janis, 1972; Esser meta-analysis, 1998). The ratio floor moves from 4:1 to 3:2 — i.e., in a panel of 6, at least 2 must be designated skeptics. If only 1 skeptic is present, swap the last non-essential persona for a second skeptic from the same library section.
+
+**For panels of 3–5 personas:** the existing minimum-1-skeptic rule holds. If the ratio is worse than 4:1 in either direction, swap the last-added persona for the missing pole.
+
+This is **Pitfall 16 enforcement** and is non-negotiable.
 
 ### 3.6 Inclusive-access persona injection
 
