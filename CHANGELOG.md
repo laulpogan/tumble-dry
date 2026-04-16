@@ -2,6 +2,31 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [0.9.0] — 2026-04-15 — HARNESS-ONLY: excise API key, plain Agent() dispatch, install.sh
+
+**Theme:** Ship-blocker fix. All Anthropic API key logic removed. Product runs entirely through Claude Code session harness. Agent dispatch uses plain `Agent(prompt=...)` with no custom `subagent_type`. `install.sh` symlinks the command into `~/.claude/commands/`. `.claude-plugin/` directory removed (CC never discovered it).
+
+### Removed
+
+- **`lib/dispatch-api.cjs`** — Direct Anthropic API dispatch backend (raw HTTPS calls, prompt caching, extended thinking). Excised per user directive.
+- **`lib/dispatch.cjs`** — Dispatch router that wrapped dispatch-api.cjs. Excised.
+- **`bin/tumble-dry-loop.cjs` (gutted)** — Was the headless convergence loop driver requiring `ANTHROPIC_API_KEY`. Now prints a redirect notice pointing to `/tumble-dry` and `claude -p`. File kept to avoid breaking scripts that reference it.
+- **`.claude-plugin/`** — Plugin manifest directory (`plugin.json` + `marketplace.json`). CC never auto-discovered plugins from this path. Removed entirely.
+- **`bin/validate-plugin.cjs`** + **`tests/validate-plugin.test.cjs`** — Validated a plugin spec CC never read. Removed.
+- All `ANTHROPIC_API_KEY` references from README, CHANGELOG docs, and code.
+- `dispatch_backend` config option (was already dead since gastown removal in v0.4.2).
+- `subagent_type=` usage in slash command (CC's agent registry never contained custom types).
+
+### Changed
+
+- **`commands/tumble-dry.md`** — Rewritten. Slash command now reads agent `.md` files via `brief-*` subcommands (which embed the agent system prompt), then dispatches via `Agent(prompt=<brief content>)`. No orchestrator subagent. No plugin registry dependency. Parallel fanout preserved (multiple Agent calls in one turn).
+- **README.md** — Rewritten from scratch. Single install path (`git clone` + `install.sh`). No API key mentioned anywhere. No "two control planes."
+
+### Added
+
+- **`install.sh`** — Symlinks `commands/tumble-dry.md` into `~/.claude/commands/`. The only install step needed.
+- **`tests/harness.test.cjs`** — Verifies no file in `lib/` or `bin/` contains `ANTHROPIC_API_KEY`, `dispatch-api`, or `dispatch.cjs`.
+
 ## [0.8.0] — 2026-04-15 — UX rebuild: headless orchestrator + batch + dry-run + status/resume + canary
 
 **Theme:** First-run cliff removed. Main-session token flooding eliminated. Batch input native. Architectural reversal of Phase 1's "slash-command-is-orchestrator" decision — see `.planning/research/ARCHITECTURE.md` addendum for the dogfood evidence.
@@ -177,6 +202,8 @@ Phase 1's ARCHITECTURE.md declared "slash command IS the orchestrator." Real PM 
 
 ---
 
+[0.9.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.9.0
+[0.8.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.8.0
 [0.7.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.7.0
 [0.6.0]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.6.0
 [0.5.2]: https://github.com/laulpogan/tumble-dry/releases/tag/v0.5.2
