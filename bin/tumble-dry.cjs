@@ -28,6 +28,7 @@ const { writeRoundReport, writeFinalReport } = require('../lib/report.cjs');
 const { estimateRunCost, renderCostBlock } = require('../lib/pricing.cjs');
 const { inferDefaults, dumpConfigYaml } = require('../lib/canary.cjs');
 const { astDriftReport, parseCheck } = require('../lib/code/ast-drift.cjs');
+const gitInt = require('../lib/git-integration.cjs');
 const {
   buildReviewerBrief,
   buildAudienceBrief,
@@ -42,6 +43,13 @@ const AGENTS_DIR = path.resolve(__dirname, '..', 'agents');
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const cwd = process.cwd();
+
+// GIT-06: --no-git flag disables all git operations.
+const NO_GIT = argv.includes('--no-git');
+if (NO_GIT) gitInt.disable();
+
+// APPLY-01: --apply-to-source flag copies FINAL back to source path.
+const APPLY_TO_SOURCE = argv.includes('--apply-to-source');
 
 function die(msg, code = 1) { console.error(`tumble-dry: ${msg}`); process.exit(code); }
 
@@ -96,8 +104,20 @@ async function runInit(artifact) {
       console.error(`[loader] source format: ${formatMeta.format} — working on markdown projection; ROUNDTRIP_WARNING.md written.`);
     }
   }
+  // GIT-01: create branch unless --no-git or not a repo.
+  let gitResult = null;
+  if (gitInt.isEnabled()) {
+    gitResult = gitInt.createRunBranch(slug, { cwd });
+    if (gitResult.ok) {
+      console.error(`[tumble-dry] git: on branch ${gitResult.branch}`);
+    } else if (gitResult.reason !== 'not_a_repo') {
+      console.error(`[tumble-dry] git: ${gitResult.reason} — continuing without git`);
+    }
+  }
+
   const out = { slug, run_dir: runDir, round, round_dir: rDir, artifact: artifactAbs };
   if (formatMeta) out.source_format = formatMeta.format;
+  if (gitResult) out.git = gitResult;
   const warningPath = path.join(runDir, 'ROUNDTRIP_WARNING.md');
   if (fs.existsSync(warningPath)) out.roundtrip_warning = warningPath;
   console.log(JSON.stringify(out, null, 2));
@@ -105,7 +125,46 @@ async function runInit(artifact) {
 
 switch (cmd) {
   case 'init': {
-    runInit(argv[1]).catch(err => { console.error(err.stack || err.message); process.exit(1); });
+    // GLOB-02: if arg contains glob chars, expand and route to batch when N>1.
+    const initArg = argv[1];
+    if (initArg && /[*?{]/.test(initArg)) {
+      const { expandInputs } = require('../lib/glob-expand.cjs');
+      const resolved = expandInputs(cwd, [initArg]);
+      if (!resolved.length) die(`no files matched glob: ${initArg}`);
+      if (resolved.length > 1) {
+        // Route to batch
+        (async () => {
+          try {
+            const batch = await initBatch(cwd, resolved);
+            initStatus(batch.batchDir, { kind: 'batch', slug: batch.batchSlug });
+            // GIT-05: batch git branch
+            if (gitInt.isEnabled()) {
+              const gr = gitInt.createRunBranch(batch.batchSlug, { cwd });
+              if (gr.ok) console.error(`[tumble-dry] git: on branch ${gr.branch}`);
+            }
+            console.log(JSON.stringify({
+              kind: 'batch',
+              batch_slug: batch.batchSlug,
+              batch_dir: batch.batchDir,
+              files: batch.fileRuns.map(f => ({
+                slug: f.fileSlug,
+                run_dir: f.runDir,
+                artifact: f.artifactAbs,
+                source: f.sourceAbs,
+              })),
+            }, null, 2));
+          } catch (err) {
+            console.error(`tumble-dry: init-batch failed: ${err.message}`);
+            process.exit(1);
+          }
+        })().catch(e => { console.error(e.stack || e.message); process.exit(1); });
+        break;
+      }
+      // Single file from glob — fall through to normal init
+      runInit(resolved[0]).catch(err => { console.error(err.stack || err.message); process.exit(1); });
+      break;
+    }
+    runInit(initArg).catch(err => { console.error(err.stack || err.message); process.exit(1); });
     break;
   }
   case 'new-round': {
@@ -425,12 +484,13 @@ switch (cmd) {
     break;
   }
   case 'finalize': {
-    // Accept positional slug + optional --apply flag (ROUNDTRIP-01).
+    // Accept positional slug + optional --apply/--apply-to-source flag (ROUNDTRIP-01, APPLY-01).
     const positionals = argv.slice(1).filter(a => !a.startsWith('--'));
     const flags = argv.slice(1).filter(a => a.startsWith('--'));
     const slug = positionals[0];
     const applyRoundtrip = flags.includes('--apply');
-    if (!slug) die('usage: finalize <slug> [--apply]');
+    const applyToSource = APPLY_TO_SOURCE || flags.includes('--apply-to-source');
+    if (!slug) die('usage: finalize <slug> [--apply] [--apply-to-source]');
     const runDir = findRunDir(slug);
     const artifactPath = fs.readFileSync(path.join(runDir, 'artifact.path'), 'utf-8').trim();
     const sourcePathFile = path.join(runDir, 'source.path');
@@ -530,6 +590,32 @@ switch (cmd) {
         break;
       }
     }
+    // GIT-03: commit FINAL.md + polish-log.md + REPORT.md on branch.
+    if (gitInt.isEnabled()) {
+      const fc = gitInt.commitFinal(runDir, slug, { cwd });
+      if (fc.ok) console.error(`[tumble-dry] git: committed final (${fc.hash})`);
+    }
+
+    // APPLY-01: copy FINAL.md back to source path.
+    if (applyToSource) {
+      try {
+        fs.copyFileSync(finalPath, sourcePath);
+        console.error(`[tumble-dry] applied FINAL.md to ${sourcePath}`);
+        if (gitInt.isEnabled()) {
+          const ac = gitInt.commitApply(sourcePath, slug, { cwd });
+          if (ac.ok) console.error(`[tumble-dry] git: committed apply (${ac.hash})`);
+        }
+      } catch (err) {
+        console.error(`[tumble-dry] apply-to-source failed: ${err.message}`);
+      }
+    }
+
+    // GIT-04: PR hint.
+    if (gitInt.isEnabled()) {
+      gitInt.prHint(slug, runDir);
+      gitInt.returnToOriginalBranch({ cwd });
+    }
+
     const out = { final: finalPath, polish_log: path.join(runDir, 'polish-log.md') };
     if (roundtripOut) out.roundtrip = roundtripOut;
     console.log(JSON.stringify(out, null, 2));
@@ -760,15 +846,39 @@ switch (cmd) {
     console.log(JSON.stringify(inferred, null, 2));
     break;
   }
+  case 'commit-round': {
+    // GIT-02: commit round artifacts with convergence metadata.
+    const slug = argv[1];
+    const round = parseInt(argv[2], 10);
+    if (!slug || !round) die('usage: commit-round <slug> <round> [material=N] [structural=N] [drift=X] [converged=bool]');
+    if (!gitInt.isEnabled()) {
+      console.log(JSON.stringify({ ok: false, reason: 'disabled' }));
+      break;
+    }
+    const runDir = findRunDir(slug);
+    const meta = { material: 0, structural: 0, drift: 0, converged: false };
+    for (const kv of argv.slice(3)) {
+      const m = kv.match(/^([^=]+)=(.*)$/);
+      if (!m) continue;
+      const key = m[1].trim();
+      const val = m[2];
+      if (key === 'converged') meta.converged = val === 'true' || val === 'yes';
+      else meta[key] = Number(val) || 0;
+    }
+    const result = gitInt.commitRound(runDir, round, meta, { cwd });
+    console.log(JSON.stringify(result, null, 2));
+    break;
+  }
   default:
     console.error('tumble-dry — content polish via simulated-public-contact review');
     console.error('');
     console.error('Subcommands:');
-    console.error('  init <artifact-path>');
+    console.error('  init <artifact-path> [--no-git]');
     console.error('  new-round <slug>');
     console.error('  sample-voice [count]');
     console.error('  aggregate <slug> <round>');
     console.error('  drift <slug> <round> <before> <after>');
+    console.error('  commit-round <slug> <round> [material=N] [structural=N] [drift=X] [converged=bool]');
     console.error('  config');
     console.error('  brief-audience <slug> <round> [panel-size] [override]');
     console.error('  brief-auditor <slug> <round>');
@@ -776,6 +886,6 @@ switch (cmd) {
     console.error('  brief-reviewer <slug> <round> <persona-slug>');
     console.error('  brief-editor <slug> <round>');
     console.error('  extract-redraft <slug> <round>');
-    console.error('  finalize <slug>');
+    console.error('  finalize <slug> [--apply] [--apply-to-source]');
     process.exit(cmd ? 2 : 0);
 }
