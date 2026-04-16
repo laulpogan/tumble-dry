@@ -4,23 +4,33 @@
 
 Works across four artifact families: **prose** (blog posts, essays, memos, ad copy, landing pages), **office formats** (.docx, .pptx, .xlsx, .pdf — projected to markdown for review), **code** (source files and directories — AST-aware drift, language-specific style anchors, `verify_cmd` gate), and **decks** (markdown decks natively; .pptx via the office-format loader).
 
-> **What's new in v0.8.0 (2026-04-15):** UX rebuild. The convergence loop now runs inside a headless `orchestrator` subagent, not your main session — you see one progress line per round plus a final `REPORT.md`, not a 400KB critique flood. **Batch input is native** (`/tumble-dry "site/copy/*.md"` or `/tumble-dry docs/` polishes every file). **`--dry-run`** previews the inferred panel + cost estimate before committing to N reviewer waves. **`status` / `resume`** rescue orphaned runs. **Zero-config first run** works without `.tumble-dry.yml` — voice refs are inferred from your git history. `/tumble-dry` is registered as a discoverable Skill so other agents can chain it via `Skill(skill="tumble-dry", ...)`. See [CHANGELOG.md](CHANGELOG.md) for the full v0.4.2 → v0.8.0 history.
+> **v0.9.0 (2026-04-15):** HARNESS-ONLY release. All Anthropic API key logic removed. Product runs entirely through Claude Code session auth. Agent dispatch uses plain `Agent(prompt=...)` with no custom subagent_type. `install.sh` symlinks the command. `.claude-plugin/` removed (CC never discovered it). See [CHANGELOG.md](CHANGELOG.md).
 
-## Quickstart (v0.8.0)
+## Install
 
-Install the plugin (see [Install](#install) below for all options), then in any Claude Code session:
-
-```
-/tumble-dry post.md            # single file
-/tumble-dry "site/copy/*.md"   # glob — polishes every match as a batch
-/tumble-dry docs/              # directory — recursive walk, markdown + code filtered
+```bash
+git clone https://github.com/laulpogan/tumble-dry.git ~/Source/tumble-dry
+~/Source/tumble-dry/install.sh
+# Done. /tumble-dry is now available in Claude Code.
 ```
 
-On first run in a fresh repo with no `.tumble-dry.yml`, voice refs are inferred from your recent prose commits. You'll see:
+## Use
+
+```
+/tumble-dry post.md                    # single file
+/tumble-dry "site/copy/*.md"           # glob — polishes every match as a batch
+/tumble-dry docs/                      # directory — recursive walk
+/tumble-dry --dry-run pitch-deck.pptx  # preview cost before committing
+/tumble-dry status                     # list runs, flag orphans
+/tumble-dry resume <slug>              # resume a killed run
+/tumble-dry spec.docx --apply          # regenerate source binary after polish
+```
+
+On first run in a fresh repo with no `.tumble-dry.yml`, voice refs are inferred from your recent prose commits:
 
 ```
 [tumble-dry] first run — using inferred defaults: voice_refs=git_history(N=5 commits, K=3 excerpts)
-[tumble-dry] dispatched orchestrator (kind=single slug=post) → polling…
+[tumble-dry] initialized (kind=single slug=post)
 [tumble-dry] round 1 — reviewers 5/5 returned
 [tumble-dry] round 1 — aggregate (material=2 minor=4 drift=0.12)
 [tumble-dry] round 2 — reviewers 5/5 returned
@@ -31,222 +41,34 @@ Converged at round 2 after 2 round(s).
 ...
 ```
 
-Preview cost before running:
-
-```
-/tumble-dry post.md --dry-run
-# prints panel + assumption-audit summary + ## Estimated cost block, then exits
-```
-
-Killed a run mid-round? Pick it up:
-
-```
-/tumble-dry status                         # list runs, flag orphans
-/tumble-dry resume site-copy-20260415-1430 # resume from where it stopped
-```
-
 Dump the inferred config for editing:
 
-```
+```bash
 node ~/Source/tumble-dry/bin/tumble-dry.cjs config init
 # writes .tumble-dry.yml with panel_size, convergence_threshold, drift_threshold, max_rounds
 ```
 
 ---
 
-## Two control planes
-
-Tumble-dry runs the same convergence loop two ways. Both share the same
-data plane (`bin/tumble-dry.cjs` subcommands) and produce the same
-`.tumble-dry/<slug>/` layout, `FINAL.md`, and `polish-log.md`.
-
-### 1. Claude Code-native (preferred)
-
-```
-/tumble-dry <artifact>
-```
-
-- Inherits your active Claude Code session auth — **no `ANTHROPIC_API_KEY` required**.
-- Each agent (audience-inferrer, assumption-auditor, reviewer × N, editor) is
-  dispatched as a parallel `Task` subagent in a single assistant turn.
-- **Trace-fidelity caveat:** subagent request/response payloads are isolated
-  by Claude Code and NOT visible to the orchestrator. CC-path traces record
-  brief path, critique path, wall-clock timing, and exit status only —
-  not the per-dispatch extended-thinking transcript. If you need full
-  reasoning traces (CORE-04), use the headless path below.
-
-### 2. Headless CLI (fallback for CI / scripting)
-
-```
-node bin/tumble-dry-loop.cjs <artifact> [--panel-size N] [--no-auto-redraft]
-```
-
-- Requires `ANTHROPIC_API_KEY` (env var or `~/.anthropic/api_key`).
-- Writes full per-dispatch traces (request + response + extended thinking)
-  to `.tumble-dry/<slug>/round-N/traces/` per CORE-04.
-- Use this for CI runs, scripted batch polishing, or any environment
-  without an interactive Claude Code session.
-
-See `bin/tumble-dry-loop.cjs --help` for the headless flag reference.
-
----
-
-## Quickstart
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...            # or write to ~/.anthropic/api_key
-
-git clone https://github.com/laulpogan/tumble-dry.git ~/Source/tumble-dry
-cd my-project
-
-cat > .tumble-dry.yml <<'EOF'
-voice_refs: [ ~/Source/my-past-writing ]
-panel_size: 5
-convergence_threshold: 2
-max_rounds: 10
-EOF
-
-node ~/Source/tumble-dry/bin/tumble-dry-loop.cjs post.md
-```
-
-One command. Runs end-to-end: audience inference → assumption audit → reviewer wave → aggregate → editor redraft → repeat until convergence. Outputs `FINAL.md` + `polish-log.md` + per-round history + reasoning traces in `.tumble-dry/<slug>/`. Source file is **never modified**.
-
-## Install
-
-### As a Claude Code plugin
-
-```bash
-git clone https://github.com/laulpogan/tumble-dry.git ~/Source/tumble-dry
-ln -s ~/Source/tumble-dry ~/.claude/plugins/tumble-dry
-# /tumble-dry slash command is now available
-```
-
-### As a CLI tool (no plugin)
-
-```bash
-git clone https://github.com/laulpogan/tumble-dry.git
-./tumble-dry/bin/tumble-dry-loop.cjs post.md
-```
-
-### As a git submodule in another repo
-
-```bash
-cd my-other-project
-git submodule add https://github.com/laulpogan/tumble-dry.git tools/tumble-dry
-node tools/tumble-dry/bin/tumble-dry-loop.cjs post.md
-```
-
-### Via the SlanchaAi marketplace
-
-```bash
-claude plugin marketplace add github:SlanchaAi/skills
-claude plugin install tumble-dry@slanchaai
-```
-
-## Office formats
-
-Tumble-dry polishes `.md` / `.markdown` / `.txt` natively. Office formats (`.docx`, `.pptx`, `.xlsx`, `.pdf`) are supported via optional dependencies and a markdown-projection pipeline:
-
-```bash
-cd ~/Source/tumble-dry
-npm install       # installs mammoth, turndown, officeparser, unpdf (optionalDependencies)
-```
-
-Markdown-only users can skip `npm install` entirely — the loader degrades gracefully and prints an actionable hint if it encounters an office format without its dependencies.
-
-| Extension            | Loader                                        | Boundary markers      |
-| -------------------- | --------------------------------------------- | --------------------- |
-| `.md` `.markdown` `.txt` | identity (no deps)                        | none                  |
-| `.docx`              | mammoth → HTML → turndown                     | headings preserved    |
-| `.pptx`              | officeparser                                  | `<!-- slide:N -->`    |
-| `.xlsx`              | officeparser                                  | `<!-- sheet:Name -->` |
-| `.pdf`               | officeparser primary, unpdf (ESM) fallback    | `<!-- page:N -->`     |
-| anything else        | pandoc fallback (if `pandoc` is on `$PATH`)   | pandoc-dependent      |
-
-**FINAL.md always ships as markdown.** Tumble-dry does not regenerate the source binary — the original `.docx` / `.pptx` / `.xlsx` / `.pdf` is preserved byte-for-byte at `.tumble-dry/<slug>/history/round-0-original.<ext>`, and a `ROUNDTRIP_WARNING.md` is emitted before round 1 reminding you to re-apply FINAL.md content manually. Automatic roundtrip to binary formats is explicitly out of scope through v0.6.
-
-All loaders return a typed result: `{ ok:true, markdown, format, warnings[] }` or `{ ok:false, reason, detail }` with `reason ∈ { encrypted, corrupt, unsupported, empty, too_large }`. The loader enforces a 20MB file-size gate and surfaces encrypted / password-protected files with an actionable error.
-
-Encoding invariants (FORMAT-07): UTF-8 default, BOM stripped on read, CJK / RTL / curly-quote / emoji preserved through the projection.
-
-## Roundtrip
-
-**Default behavior unchanged:** tumble-dry produces `FINAL.md` and you re-apply changes to your `.docx` / `.pptx` / `.xlsx` source manually. As of v0.7.0 you can opt into automatic regeneration with `--apply` (slash command) or `--write-final` (headless CLI):
-
-```bash
-/tumble-dry deck.pptx --apply
-node bin/tumble-dry-loop.cjs spec.docx --write-final
-```
-
-When set, finalize writes `FINAL.<ext>` next to `FINAL.md` and a `LOSSY_REPORT.md` describing what survived, what was approximated, and what was dropped. The slash command surfaces the report to chat after finalize.
-
-**What's preserved/dropped per format:**
-
-- **`.docx`** (via `docx@^9`): preserves headings H1-H6, paragraphs, ordered + unordered lists, simple markdown pipe tables, inline emphasis (bold/italic/inline code rendered as Courier New), block quotes (indented paragraphs). Drops images, embedded objects, comments, track-changes, custom styles, footnotes, headers/footers, page numbers, section breaks.
-- **`.pptx`** (via `pptxgenjs@^3`): preserves slide count from `<!-- slide:N -->` markers, slide titles from H2, body bullets, and speaker notes from `<!-- notes: ... -->` markers. Drops original templates, slide masters, theme colors, animations, transitions, embedded media, charts, custom shapes.
-- **`.xlsx`** (via `exceljs@^4` — NOT SheetJS, same CVE rationale as ingestion): preserves sheet count from `<!-- sheet:Name -->` markers, sheet names (truncated to Excel's 31-char cap), table dimensions, bold header rows, numeric vs string cell types (auto-detected; leading-zero strings preserved as strings to protect IDs / ZIP codes). Drops formulas (cells become literal values), pivot tables, charts, conditional formatting, data validation, named ranges, frozen panes, merged cells, cell styles beyond bold header, macros.
-
-**PDF roundtrip is explicitly NOT supported.** Passing `--apply` on a `.pdf` source errors:
-
-> PDF roundtrip is not supported. FINAL.md is your polished output — re-typeset with pandoc / weasyprint / your preferred markdown→PDF tool. See README §Roundtrip for rationale.
-
-Markdown→PDF is a different rendering problem with multiple acceptable third-party tools (pandoc, weasyprint, typst). FINAL.md is still produced; only the writer step exits non-zero (exit 4).
-
-See `LOSSY_REPORT.md` in your run dir (`.tumble-dry/<slug>/`) for the per-run breakdown of what was preserved, approximated, and lost.
-
-## Code mode
-
-Point tumble-dry at a source file or a code directory:
-
-```bash
-/tumble-dry path/to/module.js
-/tumble-dry path/to/project        # detects via package.json / go.mod / etc.
-```
-
-The loader recognizes a code artifact via `linguist-js` (extension + content heuristics) and falls back to a shebang sniff for extension-less scripts. For a directory, any of `package.json`, `go.mod`, `Cargo.toml`, `pyproject.toml`, or ≥3 files with recognized programming extensions triggers code mode.
-
-**What changes in code mode:**
-
-- **Reviewer briefs** carry a `language: <primary>` header and skip voice excerpts entirely. Reviewers are explicitly told: *do NOT flag issues a linter would catch — assume linter-clean input.* The default panel swaps the layman for **Yuki Tanaka (new-hire-in-6-months)** per PERSONA-06.
-- **Editor** switches to `agents/editor-code.md`. Voice samples are replaced by a language-specific **style anchor** (PEP 8 for Python, Effective Go for Go, Rust API Guidelines for Rust, JavaScript Standard for JS/TS, generic defaults for everything else).
-- **Drift report** is AST-aware. `lib/code/ast-drift.cjs` uses `web-tree-sitter` (WASM) + a per-language grammar to enumerate top-level symbols and classify each: `unchanged | renamed | moved | modified | signature_changed | added | removed | reformatted`. **Signature changes on public API are a permanent STRUCTURAL flag** — they can never be silently auto-converged.
-- **Parseability gate:** the redraft is parsed with the same grammar. `hasError` trees mark the redraft as `proposed-redraft-invalid` and the loop discards it.
-- **`verify_cmd` gate:** if your project has a `package.json` with a `test` script, tumble-dry runs `npm test -- --run` against the staged redraft before applying it. Override in `.tumble-dry.yml`:
-
-  ```yaml
-  verify_cmd: "cargo test --quiet"
-  ```
-
-  A non-zero exit rejects the redraft; `working.md` is left unchanged and the next round's reviewers see the rejection.
-
-**Style anchors shipped:** Python, Go, Rust, JavaScript (also covers TypeScript). Unlisted languages fall back to `lib/code/style-anchors/default.cjs` — a generic "follow existing conventions" anchor.
-
-**Tree-sitter grammars:** only `tree-sitter-javascript` ships in `optionalDependencies`. For Python / Go / Rust / TypeScript AST drift, install the grammar yourself:
-
-```bash
-npm install --no-save tree-sitter-python tree-sitter-go tree-sitter-rust tree-sitter-typescript
-```
-
-Missing grammars degrade gracefully to `lib/voice.cjs::voiceDriftReport` sentence diff — you still get a drift number, just not the per-symbol taxonomy.
-
-**Limitations:**
-- Single-language files and directories are well supported. Polyglot files (HTML with embedded JS, Markdown with fenced code, shell with language heredocs) are **detected** but the AST drift report only processes the primary language.
-- Large files (>512KB per file in directory mode; >20MB total projection) are excluded with a warning.
-- Static analysis (lint, type-check) is the user's job. Tumble-dry reviews **what a person would flag**, not what a linter already catches.
-
 ## How it works
 
-1. **Audience Inferrer** reads the artifact, proposes 3–6 specific personas (not "a reader" — *"CFO at a mid-market SaaS, 10+ years in finance, skeptical of AI hype after a failed pilot last year"*). Persona library by artifact type seeded into prompt.
+1. **Audience Inferrer** reads the artifact, proposes 3-6 specific personas (not "a reader" — *"CFO at a mid-market SaaS, 10+ years in finance, skeptical of AI hype after a failed pilot last year"*). Persona library by artifact type seeded into prompt.
 2. **Assumption Auditor** surfaces the piece's load-bearing premises — what it takes for granted about its reader, subject, and context.
 3. **Reviewers** (N in parallel) critique through their persona's lens, stress-testing the top-3 load-bearing assumptions. Findings tagged `material | minor | nit`. Premise-level problems get a `STRUCTURAL:` flag.
-4. **Aggregator** dedupes findings, counts unique material findings, detects persistence across rounds (same finding 2+ rounds → auto-promotes to structural).
-5. If ≤ `convergence_threshold` material findings → stop. **Converged**.
-6. Otherwise, **Editor** redrafts (extended thinking on by default), constrained by voice excerpts sampled from `voice_refs`. Drift report classifies each sentence as `unchanged | modified | inserted | deleted`.
+4. **Aggregator** dedupes findings, counts unique material findings, detects persistence across rounds (same finding 2+ rounds -> auto-promotes to structural).
+5. If <= `convergence_threshold` material findings -> stop. **Converged**.
+6. Otherwise, **Editor** redrafts, constrained by voice excerpts sampled from `voice_refs`. Drift report classifies each sentence as `unchanged | modified | inserted | deleted`.
 7. Redraft updates the working copy (source untouched), loop to step 3.
 
 ## Dispatch
 
-**Two paths, same loop.** The Claude Code-native slash command (`/tumble-dry`) fans each agent out as a parallel `Task` subagent inside your active session — no API key required, session auth inherited. The headless CLI (`bin/tumble-dry-loop.cjs`) uses direct Anthropic API calls (requires `ANTHROPIC_API_KEY`), writes full per-dispatch traces, and is the CI / scripting fallback. Both share the same data plane (`bin/tumble-dry.cjs` subcommands) and produce the same `.tumble-dry/<slug>/` layout. Reviewers run on Sonnet; audience-inferrer and editor run on Opus. Parallel calls with prompt caching on the static prefix (artifact + audit + voice-or-style excerpts).
+The `/tumble-dry` slash command reads each agent's system prompt from `agents/*.md`, embeds it in the brief, and dispatches via `Agent(prompt=...)`. Multiple Agent calls in one assistant turn run concurrently — all N reviewers fan out in parallel. No plugin registry, no custom subagent types, no API key.
+
+For CI/scripting without an interactive Claude Code session:
+
+```bash
+claude -p '/tumble-dry <artifact>'
+```
 
 ## Configuration
 
@@ -257,29 +79,43 @@ voice_refs:                      # paths to your past writing — sampled into e
   - ~/Source/my-past-writing/
 
 audience_override: null          # optional string; null = infer from artifact
-panel_size: 5                    # 3–7 reviewers per round
-convergence_threshold: 2         # ≤ N material findings → converged
+panel_size: 5                    # 3-7 reviewers per round
+convergence_threshold: 2         # <= N material findings -> converged
 max_rounds: 10                   # absolute safety cap
 fine_tune_model_path: null       # v2 — swap in your fine-tuned voice model
-
-dispatch_backend: api            # 'api' (default) | 'gastown' (opt-in)
 ```
 
-Per-role model override via env:
+## Office formats
+
+Tumble-dry polishes `.md` / `.markdown` / `.txt` natively. Office formats (`.docx`, `.pptx`, `.xlsx`, `.pdf`) are supported via optional dependencies:
 
 ```bash
-export TUMBLE_DRY_MODEL=claude-opus-4-6                    # all roles
-export TUMBLE_DRY_MODEL_REVIEWER=claude-sonnet-4-6         # just reviewers
-export TUMBLE_DRY_MODEL_EDITOR=claude-opus-4-6             # just editor
+cd ~/Source/tumble-dry
+npm install       # installs mammoth, turndown, officeparser, unpdf (optionalDependencies)
 ```
 
-Per-role thinking budget:
+Markdown-only users can skip `npm install` entirely.
+
+| Extension            | Loader                                        | Boundary markers      |
+| -------------------- | --------------------------------------------- | --------------------- |
+| `.md` `.markdown` `.txt` | identity (no deps)                        | none                  |
+| `.docx`              | mammoth -> HTML -> turndown                   | headings preserved    |
+| `.pptx`              | officeparser                                  | `<!-- slide:N -->`    |
+| `.xlsx`              | officeparser                                  | `<!-- sheet:Name -->` |
+| `.pdf`               | officeparser primary, unpdf fallback          | `<!-- page:N -->`     |
+| anything else        | pandoc fallback (if on `$PATH`)               | pandoc-dependent      |
+
+## Code mode
 
 ```bash
-export TUMBLE_DRY_THINK_EDITOR=8000          # raise editor thinking budget
-export TUMBLE_DRY_THINK_REVIEWER=2000        # enable reviewer thinking
-export TUMBLE_DRY_THINK=0                    # disable thinking globally
+/tumble-dry path/to/module.js
+/tumble-dry path/to/project
 ```
+
+- **Reviewer briefs** carry a `language:` header, skip voice excerpts. Default panel swaps the layman for **Yuki Tanaka (new-hire-in-6-months)**.
+- **Editor** uses `agents/editor-code.md` with language-specific style anchors (PEP 8, Effective Go, Rust API Guidelines, JS Standard).
+- **Drift report** is AST-aware via `web-tree-sitter`. Signature changes on public API are permanent STRUCTURAL flags.
+- **`verify_cmd` gate** runs `npm test -- --run` (or custom command from `.tumble-dry.yml`) before applying redrafts.
 
 ## Output layout
 
@@ -292,7 +128,6 @@ export TUMBLE_DRY_THINK=0                    # disable thinking globally
     round-0-original.md         # byte-for-byte copy of source at init time
     round-1-input.md            # working.md before editor pass
     round-1-output.md           # working.md after editor pass
-    round-2-input.md            ...
   round-1/
     brief-audience.md           brief-auditor.md
     brief-reviewer-<persona>.md brief-editor.md
@@ -300,130 +135,60 @@ export TUMBLE_DRY_THINK=0                    # disable thinking globally
     critique-<persona>.md       aggregate.md   aggregate.json
     proposed-redraft.md         redraft-staged.md
     diff.md                     # drift report
-    traces/
-      <persona>.json            # full request + response per dispatch
-      editor.json
-      editor.thinking.md        # extended-thinking transcript
   round-2/
     ...
   FINAL.md                      # polished artifact
-  polish-log.md                 # round-by-round summary, source path, cp hint
+  polish-log.md                 # round-by-round summary
 ```
 
 ## Non-destructive history
 
-Source is **never modified**. On `init`, tumble-dry copies it into `.tumble-dry/<slug>/working.md` and operates on that copy. The original location is recorded in `source.path` for provenance.
+Source is **never modified**. On `init`, tumble-dry copies it into `.tumble-dry/<slug>/working.md` and operates on that copy. Each round produces two history snapshots (`round-N-input.md`, `round-N-output.md`) so any version can be reconstructed without re-running.
 
-Each round produces two history snapshots — `round-N-input.md` (state going into the editor) and `round-N-output.md` (state coming out) — so any version can be reconstructed without re-running the loop. `polish-log.md` includes the source path and a `cp FINAL.md <source>` hint to apply the polished version.
-
-## Reasoning traces
-
-Every dispatch writes a full trace to `round-N/traces/<role>.json`:
-
-- the exact request payload (model, system prompt, user blocks, thinking budget)
-- the response broken into typed content blocks (`text`, `thinking`)
-- token usage (input, output, cache read, cache creation)
-- start/finish timestamps + duration
-
-Extended thinking is enabled for the **editor** by default (4000-token budget — synthesis step, high leverage). Reviewers and audit/audience agents default to no thinking to control cost on parallel calls. Thinking transcripts also dumped as `traces/<role>.thinking.md`.
-
-## Structural vs surface findings
-
-Reviewers distinguish **surface** problems (rewriteable: weak headline, jargon, missing CTA) from **structural** problems (premise-level: the pricing model only works if buyers are irrational; the thesis assumes a market that doesn't exist).
-
-Structural findings are prefixed with `STRUCTURAL:` in the body. The aggregator promotes them to a top-of-doc **⚠ Structural alert** in `aggregate.md`, and auto-promotes any material finding that persists across ≥2 prior rounds (same finding keeps coming back → premise problem, not paragraph problem).
-
-If the loop never converges, the structural alert is the answer: editor rewrites can't fix premise. See [`docs/adversarial-review-process.md`](docs/adversarial-review-process.md) for the source methodology.
-
-## CLI reference
-
-Full autonomous convergence loop:
-
-```bash
-node bin/tumble-dry-loop.cjs <artifact> [--panel-size N] [--no-auto-redraft]
-```
-
-Data-plane subcommands (for custom orchestration):
+## CLI reference (data-plane)
 
 ```bash
 node bin/tumble-dry.cjs init <artifact>
 node bin/tumble-dry.cjs brief-audience <slug> <round>
 node bin/tumble-dry.cjs brief-auditor <slug> <round>
-node bin/tumble-dry.cjs brief-reviewers <slug> <round>         # batched
+node bin/tumble-dry.cjs brief-reviewers <slug> <round>
 node bin/tumble-dry.cjs brief-editor <slug> <round>
-node bin/tumble-dry.cjs aggregate <slug> <round>               # prints convergence JSON
-node bin/tumble-dry.cjs drift <slug> <round> <before> <after>  # classifies sentence changes
+node bin/tumble-dry.cjs aggregate <slug> <round>
+node bin/tumble-dry.cjs drift <slug> <round> <before> <after>
 node bin/tumble-dry.cjs extract-redraft <slug> <round>
-node bin/tumble-dry.cjs finalize <slug>
-node bin/tumble-dry.cjs config                                  # print resolved config
+node bin/tumble-dry.cjs finalize <slug> [--apply]
+node bin/tumble-dry.cjs config
+node bin/tumble-dry.cjs status
+node bin/tumble-dry.cjs resume <slug>
+node bin/tumble-dry.cjs dry-run <artifact> [--panel-size N]
 ```
-
-## Drift metric
-
-The drift report classifies every sentence in the redraft:
-
-- **unchanged** — matches an original sentence at ≥85% token overlap
-- **modified** — matches an original at 60-85% (rewritten but recognizable)
-- **inserted** — best match to original is <60% (net-new content)
-- **deleted** — original sentence with no matching successor
-
-**Drift score** = `modified / (unchanged + modified)` — fraction of _preserved_ sentences that were materially rewritten. Insertions don't inflate the score (filling an empty section is fine). High drift score = editor paraphrasing the author's existing sentences = voice danger.
-
-## When to use this
-
-- **Before publishing.** Substack post, blog essay, landing page, ad copy.
-- **Before fundraising.** Pitch deck + financial model. Persona library covers VC / CFO / Layman / Series-A out of the box.
-- **Before launch.** Website copy + pricing page against prospect / technical-buyer / non-technical-buyer.
-- **Before major pivots.** Strategy doc against skip-level exec / engineer / cross-functional partner / devil's advocate.
-- **Before merging non-trivial code.** Pre-PR self-review against staff-eng / security / on-call SRE / new-hire personas. Catches what tests and linters won't (architectural drift, premature abstraction, missing failure mode). Language-aware as of v0.6.0 — AST drift, style anchors, `verify_cmd` gate.
-- **After competitive research.** Re-run on positioning vs the new landscape.
-- **Quarterly.** Investor update, board deck, OKR memo.
-
-## When NOT to use this
-
-- **Tests + types + linters.** Tumble-dry complements them; it does not replace them. Run them too.
-- **Design / UX review.** Use real users.
-- **Product decisions.** Use customer interviews.
-- **Speed > rigor.** A polish loop is 5–15 minutes per round.
 
 ## Repo layout
 
 ```
-agents/        ← audience-inferrer, assumption-auditor, reviewer, editor (system prompts)
-bin/           ← tumble-dry-loop driver + tumble-dry data-plane CLI
-commands/      ← /tumble-dry slash command
-lib/           ← aggregator, voice sampler, dispatch backends, run-state
-docs/          ← supporting docs (adversarial review methodology)
-examples/      ← end-to-end runs on real artifacts
-personas/      ← persona library + runbook (v0.4.1+)
-research/      ← raw research outputs feeding the persona library
+agents/        <- audience-inferrer, assumption-auditor, reviewer, editor (system prompts, read at dispatch time)
+bin/           <- tumble-dry data-plane CLI
+commands/      <- /tumble-dry slash command
+lib/           <- aggregator, voice sampler, run-state, pricing, status, report
+docs/          <- supporting docs (adversarial review methodology)
+personas/      <- persona library + runbook
+install.sh     <- symlinks /tumble-dry into ~/.claude/commands/
 marketplace.json   VERSION   LICENSE
 ```
 
-## Example
+## When to use this
 
-See [`examples/dogfood-2026-04-14/`](examples/dogfood-2026-04-14/) for a complete run on a real substack post — all round artifacts, drift reports, the round-1 editor redraft.
+- **Before publishing.** Substack post, blog essay, landing page, ad copy.
+- **Before fundraising.** Pitch deck + financial model.
+- **Before launch.** Website copy + pricing page.
+- **Before merging non-trivial code.** Pre-PR self-review against staff-eng / security / SRE / new-hire personas.
+- **After competitive research.** Re-run on positioning vs the new landscape.
 
-## Status
+## When NOT to use this
 
-**v0.7.0 (current — 2026-04-15).** Ship-ready. Prose, office formats, code, and decks all supported. Opt-in office-format roundtrip via `--apply` / `--write-final`. See [CHANGELOG.md](CHANGELOG.md) for the phase-by-phase history.
-
-## Roadmap
-
-**Shipped (v0.4.2 → v0.6.0):**
-- **v0.4.2** — Gastown backend ripped (slow, fragile, infra-dependent); voice self-defaults to the source's own voice when no `voice_refs` configured; code accepted as plaintext artifact.
-- **v0.5.0** — Claude Code-native dispatch: `/tumble-dry` slash command fans each agent out as a parallel `Task` subagent in a single assistant turn. No `ANTHROPIC_API_KEY` required; session auth inherited. Plugin spec compliance (`.claude-plugin/plugin.json` + `marketplace.json`), CI plugin-spec validator, subagent-frontmatter migration, headless fallback documented.
-- **v0.5.1** — Persona library: 40 artifact types across 4 families (business/finance, product/engineering, marketing/comms, domain-specific), runbook with structural-vs-surface failure-mode index, per-type tuned defaults in `personas/configs.json`. Anti-mode-collapse pairing (believers + skeptics).
-- **v0.5.2** — Office-format ingestion: `mammoth`+`turndown` (.docx), `officeparser` (.pptx/.xlsx/.pdf primary), `unpdf` (.pdf ESM fallback), pandoc fallback when on `$PATH`. Typed-result contract `{ok, markdown, format, warnings}`. `ROUNDTRIP_WARNING.md` emitted before round 1. UTF-8 / BOM / CJK / RTL preserved.
-- **v0.6.0** — Code-aware mode: `linguist-js` detection, `web-tree-sitter` (WASM) AST drift with signature-change flags, language-specific style anchors (PEP 8 / Effective Go / Rust API Guidelines / JS Standard), code-review persona panel (staff eng, security, on-call SRE, new-hire-in-6-months, hostile-fork), parseability gate, `verify_cmd` redraft gate.
-- **Cross-cutting hardening** (threaded through v0.5.x) — voice-drift gate BLOCKS convergence (anti-reward-hack against editor suppressing findings by rewrite), bigram-Dice dedup with boundary-marker anchors, round-N briefs seeded with round-(N-1) unresolved clusters, trace retention (last 3 rounds full, older gzipped + summarized), `.tumble-dry/` auto-appended to `.gitignore` on first run.
-
-**Deferred to v0.7+ (see `.planning/REQUIREMENTS.md` §v2):**
-- **ROUNDTRIP-01** — Regenerate valid `.docx` / `.pptx` / `.xlsx` from edited markdown so source can be replaced in-place. Lossy and brittle; research-gated.
-- **MULTI-LLM-01** — OpenAI / Gemini / local-model dispatch. Anthropic-only through v0.6.
-- **WEB-UI-01** — Hosted SaaS / web-app frontend. CLI + plugin only through v0.6.
-- **VOICE-FT-01** — Personal fine-tuned voice model swap-in (the `fine_tune_model_path` config knob is already wired; awaiting the author's separate corpus project).
-- **REAL-USER-01** — Integration with real-user feedback channels (Posthog, Sentry, customer interview transcripts). Out of philosophy; tumble-dry simulates, doesn't substitute.
+- **Tests + types + linters.** Tumble-dry complements them; it does not replace them.
+- **Design / UX review.** Use real users.
+- **Product decisions.** Use customer interviews.
 
 ## License
 
