@@ -22,6 +22,11 @@ Reviewer personas for tumble-dry, indexed by artifact type. Each artifact type l
 
 Read in 2–4 minutes by a partner who saw 30 decks this week. Pattern-matching on founder, market, and a single insight — not on a financial model.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Late-stage investors evaluating unit economics; they'll find this deck empty, and that's by design — seed decks sell vision, not metrics.
+**market_assumptions:** Seed rounds are typically <$5M; ARR expectation is nascent or zero; YC batch size ~240; seed-stage VC evaluates founder + market, not financials.
+
 **Believer/skeptic pairing:** believers = Maya Park, Devon Cho, Garrett Liu; skeptics = Helena Borg, Aditi Rao; operator-voice = Marco Tellez.
 
 1. **Maya Park — Seed-stage GP, thesis-driven solo capitalist.** *Ex-PM at Stripe, runs a $40M solo fund. Writes first checks based on founder velocity and a single contrarian insight.*
@@ -71,6 +76,11 @@ Read in 2–4 minutes by a partner who saw 30 decks this week. Pattern-matching 
 ## Series A pitch deck
 
 Series A underwrites a *growth machine*, not a story. ARR, growth rate, and NRR expected in the first 60 seconds.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Seed investors pattern-matching on founder energy alone; this deck is a growth-machine underwriting, not a story pitch.
+**market_assumptions:** Series A expects $1-3M ARR with growth >2x YoY; NRR >100% is baseline; CAC payback <24 months is healthy; "magic number" >0.7 signals efficient growth.
 
 **Believer/skeptic pairing:** believers = Priya Iyer, Roman Vasquez, Tom Briar; skeptics = Sasha Mendel, Nathan Greaves, Dr. Hae-won Lim.
 
@@ -122,6 +132,11 @@ Series A underwrites a *growth machine*, not a story. ARR, growth rate, and NRR 
 
 Growth equity (Series C+, PE, crossover) underwrites *durability and capital efficiency*. Rule of 40 and burn multiple are baseline.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Early-stage investors evaluating founder-market fit; this deck is a capital-efficiency audit, not a vision document.
+**market_assumptions:** Rule of 40 is the standard SaaS health metric as of 2025; public SaaS multiples in 5-10x revenue range; burn multiple <2x is efficient.
+
 **Believer/skeptic pairing:** believers = Eleanor Wachowski, Renee Bouchard; skeptics = Hunter Pell, Marcus Tanaka, Bridget Aalto; domain auditor = Dr. Yusuf Demir.
 
 1. **Eleanor Wachowski — Growth-equity MD.** *20-year buyout / growth investor; builds Excel before reading the deck.*
@@ -171,6 +186,11 @@ Growth equity (Series C+, PE, crossover) underwrites *durability and capital eff
 ## Financial model / unit-economics doc / pricing strategy
 
 Three sub-artifacts; panel below covers all three. Reviewers split between model mechanic and business reasoner.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Narrative readers looking for a business story; this is a mechanical audit of driver assumptions and formula integrity.
+**market_assumptions:** SaaS gross margin >60% is baseline; monthly churn 3-5% is typical for SMB SaaS; per-seat pricing is legacy for usage products.
 
 **Believer/skeptic pairing:** believers = Audra Kellerman, Ben Saxon; skeptics = Lena Voss, Mira Solis, Karim Boateng; strategist = Patrick "PC" Cole.
 
@@ -222,6 +242,10 @@ Three sub-artifacts; panel below covers all three. Reviewers split between model
 
 Two audiences (early-stage vs. public-co); panel swaps by stage. Default panel is the early-stage variant; public-co swap-ins flagged.
 
+
+**Last validated:** 2026-04-15
+**Not for:** External investors doing diligence — board materials are governance artifacts, not sales documents.
+
 **Believer/skeptic pairing (early):** believers = Daniel Frye, Omar Naidu; skeptics = Carla Ruth, Whitney Park; operator = Jen Halberstam.
 
 1. **Jen Halberstam — Lead VC director.** *Wants the 1:1 brief 4 days early; will quietly kill the meeting if surprised on the day.*
@@ -266,6 +290,11 @@ Two audiences (early-stage vs. public-co); panel swaps by stage. Default panel i
 ## Investor update / LP letter / portfolio quarterly
 
 Three artifacts in one family. Cadence matters as much as content.
+
+
+**Last validated:** 2026-04-15
+**Not for:** First-time readers with no portfolio context; these updates assume ongoing relationship and prior update cadence.
+**market_assumptions:** LP expectations: quarterly for fund letters, monthly for portfolio updates; MOIC/IRR/DPI/TVPI are standard return metrics.
 
 **Believer/skeptic pairing:** believers = Jason L., Mark S., LP family office; skeptics = LP institutional, Skeptic friend; portfolio peer = Founder reader.
 
@@ -317,6 +346,11 @@ Three artifacts in one family. Cadence matters as much as content.
 
 Audience: a board approving the deal plus regulators and journalists reading post-announcement. Revenue-synergy deals fail ~70% of the time.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Retail investors or press reading for the headline; this panel evaluates the internal deal rationale, not the announcement.
+**market_assumptions:** Revenue synergies miss 70% of the time (McKinsey); synergy overestimate is typically 20-50%; cultural integration is the #1 failure mode.
+
 **Believer/skeptic pairing:** believers = Hank Rosso; skeptics = Tess Hwang, Bjorn Naess, Andrea Sokol; operator = Indira Mahmood; counsel = Joaquin Reyes.
 
 1. **Hank Rosso — M&A banker.** *25 years sell-side and buy-side advisory.*
@@ -366,6 +400,11 @@ Audience: a board approving the deal plus regulators and journalists reading pos
 ## Annual report / 10-K MD&A
 
 Readers: SEC staff, sell-side analysts, plaintiff-side securities lawyers, activist investors, retail investors. Plain-English rule is the baseline; layered disclosure with executive summary is current best practice.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Casual readers looking for a company overview; this panel evaluates SEC-grade disclosure, not marketing.
+**market_assumptions:** Plain English Handbook (SEC 1998) is baseline; Reg G governs non-GAAP; risk factors must be specific post-2020 SEC guidance.
 
 **Believer/skeptic pairing:** believers = Carlos Vega, Ari Klein; skeptics = Janet Whitman, Liu Yang, Mia Donovan; lay reader = Reader-of-record retail investor.
 
@@ -417,6 +456,11 @@ Readers: SEC staff, sell-side analysts, plaintiff-side securities lawyers, activ
 
 Highest-stakes 60-minute artifact in finance. One slipped phrase moves the stock.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Retail-only audiences; this panel assumes sell-side analyst and institutional investor as primary readers.
+**market_assumptions:** Reg FD (2000) governs selective disclosure; "still" is the most expensive word in earnings calls; non-GAAP reconciliation is Reg G mandatory.
+
 **Believer/skeptic pairing:** believers = Greg Hennessy; skeptics = Sandra Klepner, Hedge-fund PM (short); operator = Mock Q&A coach; counsel = General Counsel; lay reader = Retail investor.
 
 1. **Greg Hennessy — IR head (internal author).** *Scripts every word; owns the post-call follow-up calendar.*
@@ -466,6 +510,10 @@ Highest-stakes 60-minute artifact in finance. One slipped phrase moves the stock
 ## Business case / internal capex investment proposal
 
 Audience: internal capital-review committee, CFO, often CEO. Hurdle rate (WACC + risk premium) is the gate.
+
+
+**Last validated:** 2026-04-15
+**Not for:** External investors or board members below materiality threshold; this is an internal capital-allocation artifact.
 
 **Believer/skeptic pairing:** believers = Sponsoring BU GM; skeptics = Diane Pruitt, Internal audit / risk, External board; operator = Ops leader; reconciler = Roy Tatum.
 
@@ -519,6 +567,10 @@ Audience: internal capital-review committee, CFO, often CEO. Hurdle rate (WACC +
 
 Fail mode #1: too vague, no measurable success criteria. Fail mode #2: too rigid, implementation detail that locks engineering in.
 
+
+**Last validated:** 2026-04-15
+**Not for:** End users or customers; PRDs are internal artifacts for engineering, design, and product leadership.
+
 **Believer/skeptic pairing:** believers = Maya Okafor, Priya Ranganathan; skeptics = Dimitri Voss, Theo Lindqvist; operator = Casey Park; analyst = Reza Halim.
 
 1. **Maya Okafor — Staff Product Manager, partner team.** *Ten years across consumer and B2B.*
@@ -568,6 +620,10 @@ Fail mode #1: too vague, no measurable success criteria. Fail mode #2: too rigid
 ## Engineering RFC / Design Proposal / ADR
 
 Dominant failure mode at maturing companies: RFC theater — high-status authors get a rubber stamp, low-status authors get bikeshedding.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Non-technical stakeholders evaluating business impact; RFCs are engineering artifacts for technical decision-making.
 
 **Believer/skeptic pairing:** believers = Owen Bright, Anna Petrov; skeptics = Sven Aaltonen, Ramona Diaz; operator = Ines Carvalho; adjacent consumer = Marcus Tabor; newcomer = Yuki Tanaka.
 
@@ -626,6 +682,10 @@ Dominant failure mode at maturing companies: RFC theater — high-status authors
 
 APIs are publicly versioned commitments — outsized blast radius. Stripe's process is the public benchmark.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Business stakeholders evaluating ROI; API specs are technical contracts for implementers and consumers.
+
 **Believer/skeptic pairing:** believers = Hannah Wexler, Rina Schaeffer; skeptics = Salma Idris, Diego Marchetti; operator = Ben Olafsson; external proxy = Jordan Akiyama.
 
 1. **Hannah Wexler — API Platform Engineer (Stripe-style governance role).**
@@ -675,6 +735,10 @@ APIs are publicly versioned commitments — outsized blast radius. Stripe's proc
 ## Postmortem / Incident Report
 
 Blameless, role-based, concrete action items with named owners. Dominant failure mode: narrative incident report with no contributing-factors analysis.
+
+
+**Last validated:** 2026-04-15
+**Not for:** External customers or press; postmortems are internal learning artifacts (external status pages are separate).
 
 **Believer/skeptic pairing:** believers = Aditya Banerjee; skeptics = Mei Hartwell, Quinn Aldridge, Tomás Reis; operator = Reuben Castellanos; comms = Lin Zhao.
 
@@ -726,6 +790,10 @@ Blameless, role-based, concrete action items with named owners. Dominant failure
 
 A runbook is a tactical step-by-step for one alert; a playbook is higher-level coordination. Conflating them is the #1 anti-pattern.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Strategic planners or architects; runbooks are tactical execution artifacts for on-call operators.
+
 **Believer/skeptic pairing:** believers = Hassan Ortega, Pippa Crowley; skeptics = Frances Idemudia, Lena Brock; newcomer = Ravi Subramanian.
 
 1. **Frances Idemudia — On-call SRE (3 a.m. test).**
@@ -769,6 +837,10 @@ A runbook is a tactical step-by-step for one alert; a playbook is higher-level c
 
 READMEs fail by burying the lede. CONTRIBUTING files fail by being checklists for maintainers' convenience.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Internal team members who already know the codebase; READMEs are for first-time visitors and prospective contributors.
+
 **Believer/skeptic pairing:** believers = Kofi Mensah; skeptics = Devon Whitley, Bea Oduya; end-reader = Ada Rinaldi; maintainer = Yelena Iversen.
 
 1. **Ada Rinaldi — First-time visitor (60-second test).**
@@ -811,6 +883,10 @@ READMEs fail by burying the lede. CONTRIBUTING files fail by being checklists fo
 ## Migration Plan / Breaking Change Announcement
 
 Migrations fail at the *seam*: the period when both old and new coexist.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Users who aren't affected by the migration; anti-persona is the developer whose workflow doesn't touch the changed surface.
 
 **Believer/skeptic pairing:** believers = Iris Halverson, Cora Begum; skeptics = Shankar Velayudhan, Avi Sternlicht; operator = Niko Lazaridis, Marisol Pinto.
 
@@ -862,6 +938,10 @@ Migrations fail at the *seam*: the period when both old and new coexist.
 
 STRIDE is the dominant decomposition. Classic failure: threat-model-as-audit-checkbox with no linkage to mitigations.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Non-technical executives looking for a risk summary; threat models are technical artifacts for security engineering.
+
 **Believer/skeptic pairing:** believers = Nadia Worthington; skeptics = Selma Karaköy, Eitan Foss, Hugo Bellamy; operator = Jules Akinwale; compliance = Arthur Mendes.
 
 1. **Selma Karaköy — Application Security Engineer.**
@@ -911,6 +991,11 @@ STRIDE is the dominant decomposition. Classic failure: threat-model-as-audit-che
 ## ML/AI Eval Plan / Model Card
 
 Mitchell et al. set the bar: structured disclosure of intended use, training data, subgroup evaluation, ethical considerations, limitations.
+
+
+**Last validated:** 2026-04-15
+**Not for:** End users of the ML product; model cards are for ML engineers, product managers, and responsible-AI reviewers.
+**market_assumptions:** Pre-registration of evals is emerging best practice; Mitchell et al. (2019) model card standard; subgroup reporting is expected for high-stakes applications.
 
 **Believer/skeptic pairing:** believers = Walt Brzezinski; skeptics = Dr. Imani Faulkner, Renée Mukherjee, Caleb Harte, Vera Mladenovic; operator = Petros Kallergis; domain = Ophelia Stratton.
 
@@ -969,6 +1054,10 @@ Mitchell et al. set the bar: structured disclosure of intended use, training dat
 
 Diátaxis is the operative framework. Dominant failure: mode collision.
 
+
+**Last validated:** 2026-04-15
+**Not for:** The wrong Diataxis mode reader — if this is a tutorial, the power user is the anti-persona; if reference, the beginner is the anti-persona.
+
 **Believer/skeptic pairing:** believers = Sora Lindgren; skeptics = Felix Andrade, Naomi Glassman; end-reader proxies = Theo Bauer, Camila Restrepo.
 
 1. **Sora Lindgren — Developer Advocate / docs editor.**
@@ -1013,6 +1102,10 @@ Diátaxis is the operative framework. Dominant failure: mode collision.
 ## Press Release (Product Launch, Fundraise, Hire, M&A)
 
 Read in this order: journalist (15s), competitor (30s), customer/investor (90s). Most drafts only consider the third.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Internal employees looking for the real strategy; press releases are external-facing artifacts optimized for journalist pickup.
 
 **Believer/skeptic pairing:** believers = Priya Shah; skeptics = Maya Okonkwo, Daniel Reisman, Elena Voss, Hacker News reader; customer = Sam Lee.
 
@@ -1063,6 +1156,10 @@ Read in this order: journalist (15s), competitor (30s), customer/investor (90s).
 ## Crisis Communication / PR Statement
 
 Highest negative variance: a great statement saves a quarter, a bad one defines the company for a decade.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Internal employees (they receive a separate all-hands communication); this panel evaluates the external-facing statement.
 
 **Believer/skeptic pairing:** believers = Karen Mehta; skeptics = Hon. Robert Kang, Marcus Wei, Senator's Staffer, infosec_skeptic; customer = Aisha Bello; employee = Internal Employee on Slack.
 
@@ -1121,6 +1218,10 @@ Highest negative variance: a great statement saves a quarter, a bad one defines 
 
 The most expensive sentence in the company and the most expensive table.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Existing power users looking for documentation; landing pages are for prospects evaluating whether to start.
+
 **Believer/skeptic pairing:** believers = Jen Park, Karri-style Design Engineer; skeptics = Harry Daniels, Procurement; end-reader = Net-new Prospect, Switching Prospect; mobile-channel = Mobile User on a Train.
 
 1. **Harry "Ad Copy" Daniels — Independent Copywriter.** *Channels Harry Dry's three rules: visualization, falsifiability, uniqueness.*
@@ -1178,6 +1279,10 @@ The most expensive sentence in the company and the most expensive table.
 
 The genre AI has most degraded. Durable answer is information disparity.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Prospects who aren't in-market; don't optimize for warming cold leads, optimize for converting warm ones.
+
 **Believer/skeptic pairing:** believers = Anthony Mehta, Rahul Vohra; skeptics = Skeptical IC, Compliance Officer; operator = Deliverability Engineer; target = Veronica Liu.
 
 1. **Anthony "Iannarino" Mehta — Sales Coach.**
@@ -1227,6 +1332,10 @@ The genre AI has most degraded. Durable answer is information disparity.
 ## Product Launch Announcement / Twitter Thread / LinkedIn Post
 
 Sits permanently on a profile as evidence of taste.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Journalists looking for a press release; launch posts are social-native artifacts for the creator's direct audience.
 
 **Believer/skeptic pairing:** believers = Justin Welsh-Style LinkedIn Operator; skeptics = Hook Critic, Skeptical Engineer, Competing Founder; customer = Existing Customer; aggregator = Press / Newsletter Aggregator.
 
@@ -1278,6 +1387,10 @@ Sits permanently on a profile as evidence of taste.
 
 Usually produced by an agency, usually ignored by the org that paid for it. Only works if daily copywriters can recall it from memory.
 
+
+**Last validated:** 2026-04-15
+**Not for:** End customers; brand guidelines are internal artifacts for copywriters, designers, and agency partners.
+
 **Believer/skeptic pairing:** believers = April Dunford-Inspired Lead, Mailchimp-Style Content Designer; skeptics = Skeptical Sales Rep, Customer Researcher; operator = Junior Copywriter; designer = Brand Designer.
 
 1. **April Dunford-Inspired Positioning Lead.**
@@ -1327,6 +1440,10 @@ Usually produced by an agency, usually ignored by the org that paid for it. Only
 ## Customer Case Study / Testimonial
 
 Most often written for the vendor's pride, least often for the buyer's research process.
+
+
+**Last validated:** 2026-04-15
+**Not for:** The vendor's internal team looking for praise; case studies are for prospective buyers evaluating fit.
 
 **Believer/skeptic pairing:** believers = Doug Kessler-Inspired Editor, Sales Rep; skeptics = Skeptical Analyst, Featured Customer's Manager; end-reader = Buyer in Same Industry; hero = Hero Customer.
 
@@ -1378,6 +1495,11 @@ Most often written for the vendor's pride, least often for the buyer's research 
 
 Highest legal coupling; compliance weighted but brand voice still has to survive.
 
+
+**Last validated:** 2026-04-15
+**Not for:** General media looking for a news story; IR comms are for analysts, institutional investors, and compliance reviewers.
+**market_assumptions:** Reg FD (2000) and Reg G govern disclosure; safe harbor must be specific post-Janus Capital; non-GAAP adjustments must be stable QoQ.
+
 **Believer/skeptic pairing:** believers = IR-Designated CFO; skeptics = Elena Voss, Activist Hedge Fund Analyst, Financial Reporter; analyst = Sell-Side Analyst; lay = Retail Investor on r/investing.
 
 1. **Elena Voss — Securities Counsel.**
@@ -1428,6 +1550,10 @@ Highest legal coupling; compliance weighted but brand voice still has to survive
 
 CFP committee reads ~300 abstracts. Yours has 90 seconds.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Attendees looking for a tutorial — abstracts sell the talk, they don't teach the content.
+
 **Believer/skeptic pairing:** believers = CFP Committee Member, Conference Organizer; skeptics = Skeptical Senior; operator = Past-Self of the Speaker; attendee = Target Attendee; distribution = Twitter Recap Writer.
 
 1. **CFP Committee Member.**
@@ -1477,6 +1603,10 @@ CFP committee reads ~300 abstracts. Yours has 90 seconds.
 ## Newsletter / Serialized Blog (Substack, Beehiiv)
 
 Graded on consistency over years.
+
+
+**Last validated:** 2026-04-15
+**Not for:** One-time readers looking for a definitive reference; newsletters are serialized artifacts graded on consistency over years.
 
 **Believer/skeptic pairing:** believers = Lenny-Style Operator Reader, Distribution-Aware Marketer; skeptics = Stratechery-Style Analytical Reader, Subscriber Considering Cancellation; first-timer = First-Time Visitor; editor = Copyeditor.
 
@@ -1530,6 +1660,10 @@ Graded on consistency over years.
 
 Dominant failure: readability gap. ~94% of patient education materials exceed 6th grade; IRB templates *raise* grade level by ~2.5 grades.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Healthcare professionals looking for clinical guidelines; patient-facing materials are for patients and caregivers at ≤8th-grade reading level.
+
 **Believer/skeptic pairing:** believers = Dr. Anita Rao, Naomi Brackett; skeptics = Hannah Liebermann, Dr. Frank Olusegun, Jordan Pak; patient = Marisol Vega.
 
 1. **Marisol Vega — Patient with limited health literacy.** *58, manages Type 2 diabetes and hypertension; reads at ~5th-grade level in English (Spanish-dominant).*
@@ -1580,6 +1714,10 @@ Dominant failure: readability gap. ~94% of patient education materials exceed 6t
 
 Bad abstracts get desk-rejected without peer review for failing CONSORT-A / PRISMA-A / ICMJE.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Patients looking for treatment guidance; clinical abstracts are for researchers, reviewers, and clinicians evaluating evidence.
+
 **Believer/skeptic pairing:** believers = Dr. Wendell Hsu; skeptics = Dr. Priya Sundaresan, Dr. Hugh McAllister, Dr. Mei-Lin Choi; methodology = Tomás Ribeiro.
 
 1. **Dr. Wendell Hsu, MD — Practicing hospitalist.**
@@ -1622,6 +1760,11 @@ Bad abstracts get desk-rejected without peer review for failing CONSORT-A / PRIS
 ## Contract / NDA / TOS User-Facing Terms
 
 Consumer contracts require >14 years of education to read on average; regulatory floor is shifting.
+
+
+**Last validated:** 2026-04-15
+**Not for:** Legal scholars analyzing doctrine; these are consumer-facing contracts evaluated for comprehension and enforceability.
+**market_assumptions:** FTC click-to-cancel rule in effect; GDPR/state privacy laws require granular consent; FK grade ≤8 is consumer-facing floor.
 
 **Believer/skeptic pairing:** believers = Anya Kowalski, Karen Voss; skeptics = Marcus Webb, Renata Oduya, Dr. Sun-Hee Lim; end-reader = Devon Marsh.
 
@@ -1673,6 +1816,10 @@ Consumer contracts require >14 years of education to read on average; regulatory
 
 Garner / Scalia bar: front-load the deep issue, write sentences you could speak, deal forthrightly with counterarguments.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Lay readers looking for a summary; legal briefs are for judges, clerks, and opposing counsel.
+
 **Believer/skeptic pairing:** believers = Hon. Marian Costa, Prof. Iris Demetriou; skeptics = Sasha Reuben, Eli Brandt; operator = Brent Marlowe; researcher = Dr. Tasha Ade.
 
 1. **Hon. Marian Costa (ret.) — Former federal district judge.**
@@ -1722,6 +1869,11 @@ Garner / Scalia bar: front-load the deep issue, write sentences you could speak,
 ## Policy Memo / White Paper / Regulatory Comment Letter
 
 Plain Writing Act baseline; BLUF; cost-benefit per Circular A-4.
+
+
+**Last validated:** 2026-04-15
+**Not for:** General public looking for an explainer; policy memos are for decision-makers and regulatory bodies.
+**market_assumptions:** Post-Loper Bright (2024) deference regime; Circular A-4 2023 revision in effect; Plain Writing Act applies to federal agencies.
 
 **Believer/skeptic pairing:** believers = Carla Mendez, Maya Chen; skeptics = Dr. Henry Voorhees, Brooks Whitman, Dr. Olabisi Akande; counsel = Yusra Khalil.
 
@@ -1773,6 +1925,10 @@ Plain Writing Act baseline; BLUF; cost-benefit per Circular A-4.
 
 Written testimony ≤ 1 page, oral 2–3 min; op-eds live or die on the lede (60-word window) and the single ask.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Neutral readers looking for balanced analysis; testimony and op-eds are advocacy artifacts with a single ask.
+
 **Believer/skeptic pairing:** believers = Tomás Calderón, Ariel Norquist; skeptics = Dale Whitcomb, Stuart Halberg; decision-maker = Rep. Lori Bechtel.
 
 1. **Rep. Lori Bechtel — State legislator persona.**
@@ -1815,6 +1971,10 @@ Written testimony ≤ 1 page, oral 2–3 min; op-eds live or die on the lede (60
 ## Academic Paper Draft (Introduction & Discussion)
 
 80% of reviewer gestalt is formed in the intro; discussion is where "overreach" rejections happen.
+
+
+**Last validated:** 2026-04-15
+**Not for:** General readers looking for an accessible summary; academic papers are for peer reviewers, editors, and field researchers.
 
 **Believer/skeptic pairing:** believers = Prof. Esther Lindqvist, Prof. Ngozi Ogundipe; skeptics = Reviewer #2, Prof. Cal Winterborn, Dr. Marcia Olstad; naive reader = Aditya Sankar.
 
@@ -1865,6 +2025,10 @@ Written testimony ≤ 1 page, oral 2–3 min; op-eds live or die on the lede (60
 ## Grant Proposal (NIH, NSF, Foundation)
 
 NIH Simplified Framework: Importance / Rigor / Expertise. NSF: Intellectual Merit + Broader Impacts. Largest panel warranted.
+
+
+**Last validated:** 2026-04-15
+**Not for:** General readers or media; grant proposals are for study-section reviewers, program officers, and grants administrators.
 
 **Believer/skeptic pairing:** believers = Dr. Reviewer 1, Dr. Marisol Ng; skeptics = Dr. Reviewer 2, Dr. Broader Impacts reviewer; operator = Karen Liu; program officer = Dr. Helena Voigt; discussant = Dr. Reviewer 3.
 
@@ -1923,6 +2087,10 @@ NIH Simplified Framework: Importance / Rigor / Expertise. NSF: Intellectual Meri
 
 Backward design is the dominant framework; activity-first planning inverts it.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Students looking for learning materials; lesson plans are for teachers, instructional designers, and curriculum coordinators.
+
 **Believer/skeptic pairing:** believers = Ms. Tanya Reyes, Dr. Jay McTighe-style designer; skeptics = Student persona, Department chair; operator = Ms. Imani Carter; standards = Standards-alignment specialist.
 
 1. **Ms. Tanya Reyes — Veteran classroom teacher (15 years).**
@@ -1973,6 +2141,10 @@ Backward design is the dominant framework; activity-first planning inverts it.
 
 Motivate before formalize; intuition before notation; reveal process of discovery.
 
+
+**Last validated:** 2026-04-15
+**Not for:** Experts looking for a reference; explainers are for learners encountering the topic for the first time.
+
 **Believer/skeptic pairing:** believers = Grant Sanderson-style reviewer, Sal Khan-style reviewer; skeptics = Dr. Lin Patel, Active-learning advocate; end-reader = Confused learner.
 
 1. **Grant Sanderson-style visual-intuition reviewer.**
@@ -2018,6 +2190,9 @@ Distinct from all prose panels above. **Every persona's bounce trigger explicitl
 
 Panel default for `type=code` artifacts — replaces "layman" with "new-hire-in-6-months" per PERSONA-06.
 
+**Last validated:** 2026-04-15
+**Not for:** Non-technical stakeholders evaluating business impact; code review is for engineers evaluating design, correctness, security, and operability.
+
 **Believer/skeptic pairing:** believers = Staff Engineer (Priya), New-hire-in-6-months (Yuki-future); skeptics = Security Reviewer (Ramona), Hostile-Fork Reviewer (Linus-style); operator = On-call SRE (Frances).
 
 1. **Priya Narayanan — Staff Engineer (design reviewer).** *12 years across three large codebases; owns the review bar on the platform team.*
@@ -2052,9 +2227,31 @@ Panel default for `type=code` artifacts — replaces "layman" with "new-hire-in-
    - Hiring job: Test whether the code survives a hostile fork — minimal hidden coupling to internal services, defensible public API, no "call home" assumptions.
    - Bounce trigger: **(not linter-catchable.)** Hardcoded internal hostnames; feature flags baked into core logic with no default path; business logic leaking into what should be a library; implicit dependency on an internal-only service.
    - Load-bearing belief: Code that can't survive a fork is hostage code.
-   - Championing trigger: The artifact demonstrates clear competence in this persona's domain — no red flags, well-structured, and ready for its intended audience.
-   - Blindspot: Deep domain expertise in their area may cause tunnel vision on adjacent concerns outside their specialty.
+   - Championing trigger: Code would survive a hostile fork — minimal internal coupling, defensible public API, no "call home" assumptions, and a maintainer could take it and run.
+   - Blindspot: Fork-survival lens; may push for decoupling that adds complexity in a codebase that will never be forked.
 
 **Persona-swap rule for code artifacts:** when the plan/runbook would normally add a "layman" persona, replace with **Yuki Tanaka (new-hire-in-6-months)** instead. The layman's role — "would I understand this?" — is filled by the competent-newcomer test in the code domain.
 
 **Reviewer brief addendum for code artifacts:** every code-review brief MUST include the sentence `Do NOT flag issues a linter would catch — assume linter clean.` This is enforced in `lib/reviewer-brief.cjs` when the artifact `type=code`.
+
+---
+
+# Cross-cutting: Inclusive Access
+
+Reusable personas injected into panels per runbook §3.6 (inclusive-access injection rule). Not tied to a single artifact type — these represent readers excluded by most persona libraries.
+
+**Last validated:** 2026-04-15
+
+1. **Kenji Nakamura — Non-Native English Reader.** *International market analyst based in Tokyo. Reads English daily for work but thinks in Japanese. Evaluates whether content is accessible to the 75% of professionals worldwide who work in English as a second language.*
+   - Hiring job: Evaluate whether this artifact is accessible to non-native English speakers without misunderstanding a critical term.
+   - Bounce trigger: Jargon-dense prose, idiom-heavy metaphors ("boil the ocean," "move the needle"), cultural references that don't translate, sentences requiring native-level syntactic parsing (garden-path sentences, double negatives).
+   - Load-bearing belief: If it doesn't work in translation, it doesn't work.
+   - Championing trigger: Clean, simple prose that survives translation — short sentences, concrete nouns, no idioms, defined acronyms.
+   - Blindspot: May over-simplify domain terminology that native speakers in the field need and understand; not every technical term is jargon.
+
+2. **Daniela Ferreira — Mobile/Constrained Reader.** *VP of Operations, reading on her phone between meetings. Has 90 seconds and one thumb. Represents the 58%+ of readers who encounter professional content on mobile devices.*
+   - Hiring job: Decide in 90 seconds whether to read deeper or forward to someone who should.
+   - Bounce trigger: Wall of text with no scannable structure; buried lede requiring scroll to find the point; tables wider than portrait viewport; modals that don't dismiss; paragraphs longer than 3 lines on mobile.
+   - Load-bearing belief: If the structure doesn't work at a glance, the content doesn't matter.
+   - Championing trigger: Scannable headers, bold key phrases, mobile-friendly paragraph length, front-loaded conclusions — she gets the point before her next meeting starts.
+   - Blindspot: May optimize for brevity at the expense of nuance that deep-read audiences need; not every artifact is meant to be skimmed.

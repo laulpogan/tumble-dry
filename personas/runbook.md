@@ -131,6 +131,10 @@ If the user supplied an `audience_override` string in the brief, honor it: quote
 
 Before emitting, count believers vs. skeptics in the final panel. If the ratio is worse than 4:1 in either direction, swap the last-added persona for the missing pole. This is **Pitfall 16 enforcement** and is non-negotiable.
 
+### 3.6 Inclusive-access persona injection
+
+For any **public-facing artifact** (landing page, press release, blog, patient info, annual report, README, launch announcement, newsletter, educational explainer), inject the **Non-Native English Reader** (Kenji Nakamura) from the Cross-cutting: Inclusive Access section of `personas/library.md`. For any artifact **likely read on mobile** (email, newsletter, launch post, investor update, board memo, press release, pricing page), inject the **Mobile/Constrained Reader** (Daniela Ferreira). Injection follows the same rules as the layman injection (§3.2): adds to the panel, does not replace, and is subject to the `panel_size` clamp. If the injected persona would exceed `panel_size`, drop the last non-essential persona (not a believer, skeptic, or operator) to make room.
+
 ---
 
 ## 4. Structural-vs-surface failure-mode index
@@ -197,12 +201,31 @@ Below: 1–3 known structural failure modes per artifact type, sourced from `res
 
 ---
 
+## 5. Persona Freshness
+
+Each panel in `personas/library.md` carries a `**Last validated:**` date and an optional `**market_assumptions:**` line.
+
+**Staleness detection:** When the audience-inferrer generates a panel for an artifact type whose `last_validated` date is older than 12 months from the current date, it should print a warning in `audience.md`:
+
+> ⚠ Panel for `<artifact-type>` last validated `<date>` — market assumptions may be stale. Review panel before use.
+
+**Market-assumptions divergence:** When the artifact references assumptions that diverge from the panel's `market_assumptions` line (e.g., the artifact references "Rule of X" while the panel assumes "Rule of 40"), the audience-inferrer should log a `STALE_PANEL` warning in the reviewer brief and note the specific divergence.
+
+**Personas with time-sensitive benchmarks** (VC panels, finance panels, legal/regulatory panels) include `market_assumptions:` noting what would invalidate the panel's calibration. These are not updated automatically — the audience-inferrer flags and continues; a human decides whether to update.
+
+**Review cadence:** Panels should be reviewed every 12 months, or immediately after a major market shift (regulatory change, benchmark replacement, platform migration). The `last_validated` date is updated manually when a panel is reviewed.
+
+---
+
 ## Runbook usage — quick reference for the audience-inferrer
 
 1. Run detection rules in order → get artifact type.
 2. Load library section + `configs.json` entry for that type.
 3. Apply mix-and-match (§3) if the artifact straddles.
 4. Validate believer/skeptic mix (§3.5).
-5. For code artifacts: apply §2 code rule (layman → new-hire-in-6-months; append linter clause to brief).
-6. Emit `audience.md` per `agents/audience-inferrer.md` Output format.
-7. Reviewers receive the structural-failure-mode index for their type (§4) and are instructed to prefix structural findings with `STRUCTURAL:`.
+5. Run System 1 first-impression pass (§2.4, round 1 only).
+6. Inject inclusive-access personas if applicable (§3.6).
+7. Check panel freshness (§5); emit `STALE_PANEL` warning if needed.
+8. For code artifacts: apply §2 code rule (layman → new-hire-in-6-months; append linter clause to brief).
+9. Emit `audience.md` per `agents/audience-inferrer.md` Output format.
+10. Reviewers receive the structural-failure-mode index for their type (§4) and are instructed to prefix structural findings with `STRUCTURAL:`.
