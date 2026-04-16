@@ -1,6 +1,6 @@
 ---
 description: Polish content via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings. Dispatches agents with embedded prompts read from disk.
-argument-hint: <artifact|glob|dir|status|resume <slug>> [--dry-run] [--per-file-audience] [--apply] [--panel-size N] [--no-auto-redraft]
+argument-hint: <artifact|glob|dir|status|resume <slug>> [--dry-run] [--per-file-audience] [--apply] [--apply-to-source] [--panel-size N] [--no-auto-redraft] [--no-git]
 ---
 
 # /tumble-dry
@@ -31,7 +31,10 @@ fi
 
 ## Validate + parse args
 
-Parse `$ARGUMENTS` into positional args (artifact, subcommand) + flags (`--dry-run`, `--apply`, `--per-file-audience`, `--panel-size`, `--no-auto-redraft`). The first positional may be a subcommand: `status` or `resume <slug>`.
+Parse `$ARGUMENTS` into positional args (artifact, subcommand) + flags (`--dry-run`, `--apply`, `--apply-to-source`, `--per-file-audience`, `--panel-size`, `--no-auto-redraft`, `--no-git`). The first positional may be a subcommand: `status` or `resume <slug>`.
+
+- `--apply-to-source`: After convergence, copy FINAL.md back to the original source path. Committed on the tumble-dry branch.
+- `--no-git`: Skip all git operations (branch creation, per-round commits). Default: git ON when cwd is a repo, OFF when not.
 
 ## Subcommand: status
 
@@ -72,11 +75,14 @@ fi
 ## Initialize (single or batch)
 
 ```bash
+NO_GIT_FLAG=""
+if [ "$NO_GIT" = "true" ]; then NO_GIT_FLAG="--no-git"; fi
+
 if [[ "$ARTIFACT" == *"*"* ]] || [ -d "$ARTIFACT" ]; then
-  INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init-batch "$ARTIFACT")
+  INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init-batch "$ARTIFACT" $NO_GIT_FLAG)
   KIND=batch
 else
-  INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init "$ARTIFACT")
+  INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init "$ARTIFACT" $NO_GIT_FLAG)
   KIND=single
 fi
 SLUG=$(echo "$INIT_OUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);console.log(j.batch_slug||j.slug||"")}catch{console.log("")}}')
@@ -178,9 +184,14 @@ Write your redraft to .tumble-dry/$SLUG/round-$ROUND/proposed-redraft.md. Reply 
 ```bash
 STAGED=$(node "$TD_HOME/bin/tumble-dry.cjs" extract-redraft "$SLUG" "$ROUND")
 ARTIFACT_PATH=$(cat ".tumble-dry/$SLUG/artifact.path")
-node "$TD_HOME/bin/tumble-dry.cjs" drift "$SLUG" "$ROUND" "$ARTIFACT_PATH" "$STAGED"
+DRIFT_JSON=$(node "$TD_HOME/bin/tumble-dry.cjs" drift "$SLUG" "$ROUND" "$ARTIFACT_PATH" "$STAGED")
 # Apply redraft to working copy
 cp "$STAGED" "$ARTIFACT_PATH"
+# GIT-02: commit round artifacts with convergence metadata
+MATERIAL=$(echo "$AGG_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).material||0)}catch{console.log(0)}}')
+STRUCTURAL=$(echo "$AGG_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).structural||0)}catch{console.log(0)}}')
+DRIFT_SCORE=$(echo "$DRIFT_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).drift_score||0)}catch{console.log(0)}}')
+node "$TD_HOME/bin/tumble-dry.cjs" commit-round "$SLUG" "$ROUND" "material=$MATERIAL" "structural=$STRUCTURAL" "drift=$DRIFT_SCORE" "converged=$CONVERGED" $NO_GIT_FLAG
 ```
 
 Increment ROUND, create next round dir, loop back to "Generate reviewer briefs."
@@ -195,7 +206,9 @@ node "$TD_HOME/bin/tumble-dry.cjs" new-round "$SLUG"
 ```bash
 APPLY_FLAG=""
 if [ "$APPLY" = "true" ]; then APPLY_FLAG="--apply"; fi
-node "$TD_HOME/bin/tumble-dry.cjs" finalize "$SLUG" $APPLY_FLAG
+APPLY_SOURCE_FLAG=""
+if [ "$APPLY_TO_SOURCE" = "true" ]; then APPLY_SOURCE_FLAG="--apply-to-source"; fi
+node "$TD_HOME/bin/tumble-dry.cjs" finalize "$SLUG" $APPLY_FLAG $APPLY_SOURCE_FLAG $NO_GIT_FLAG
 node "$TD_HOME/bin/tumble-dry.cjs" report "$SLUG" final
 ```
 
