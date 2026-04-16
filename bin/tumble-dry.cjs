@@ -665,7 +665,7 @@ switch (cmd) {
     break;
   }
   case 'status': {
-    // STATUS-01: list runs in .tumble-dry/
+    // STATUS-01 + DASH-01: list runs with batch summary lines.
     const root = path.join(cwd, '.tumble-dry');
     if (!fs.existsSync(root)) {
       console.log('no runs found');
@@ -675,16 +675,37 @@ switch (cmd) {
       .filter(e => e.isDirectory() && !e.name.startsWith('_'));
     const rows = [];
     let anyUnconverged = false;
+    const batchSummaries = []; // DASH-01: batch-level summaries
+
     for (const e of entries) {
       const rd = path.join(root, e.name);
       const st = readStatus(rd);
       // Detect batch by presence of batch.json
       const isBatch = fs.existsSync(path.join(rd, 'batch.json'));
-      if (isBatch && !st) {
-        rows.push({ slug: e.name, kind: 'batch', round: '-', converged: '-', material: '-', last_updated: '-', orphan: true });
-        anyUnconverged = true;
-        continue;
+
+      // DASH-01: batch summary
+      if (isBatch) {
+        let batchInfo = null;
+        try { batchInfo = JSON.parse(fs.readFileSync(path.join(rd, 'batch.json'), 'utf-8')); } catch {}
+        if (batchInfo && Array.isArray(batchInfo.files)) {
+          const counts = { init: 0, converged: 0, in_progress: 0, forced_final: 0, total: batchInfo.files.length };
+          for (const f of batchInfo.files) {
+            const fileRunDir = f.run_dir || path.join(rd, f.slug || f.fileSlug);
+            const fileSt = readStatus(fileRunDir);
+            if (!fileSt || fileSt.phase === 'init') counts.init++;
+            else if (fileSt.converged) counts.converged++;
+            else if (fileSt.phase === 'max-rounds') counts.forced_final++;
+            else counts.in_progress++;
+          }
+          batchSummaries.push({ slug: e.name, counts });
+        }
+        if (!st) {
+          rows.push({ slug: e.name, kind: 'batch', round: '-', converged: '-', material: '-', last_updated: '-', orphan: true });
+          anyUnconverged = true;
+          continue;
+        }
       }
+
       // Single: try to read latest aggregate.json
       let material = '-';
       let round = st ? st.round : 0;
@@ -709,6 +730,17 @@ switch (cmd) {
       if (converged !== 'yes') anyUnconverged = true;
       rows.push({ slug: e.name, kind: isBatch ? 'batch' : 'single', round, converged, material, last_updated: lastUpdated, orphan });
     }
+
+    // DASH-01: print batch summaries first
+    if (batchSummaries.length) {
+      console.log('=== Batch Summary ===');
+      for (const b of batchSummaries) {
+        const c = b.counts;
+        console.log(`  ${b.slug}: [${c.init}/${c.total} init] [${c.converged}/${c.total} converged] [${c.in_progress}/${c.total} in-progress] [${c.forced_final}/${c.total} forced-final]`);
+      }
+      console.log('');
+    }
+
     // Render table
     const pad = (s, n) => String(s).padEnd(n);
     console.log(`${pad('slug', 40)} ${pad('kind', 7)} ${pad('round', 6)} ${pad('converged', 10)} ${pad('material', 9)} ${pad('last_updated', 22)} orphan`);
@@ -719,10 +751,44 @@ switch (cmd) {
     process.exit(anyUnconverged ? 1 : 0);
   }
   case 'resume': {
-    // STATUS-02: locate run, print resume plan JSON so slash command can re-dispatch orchestrator.
+    // STATUS-02 + DASH-02: locate run or batch, print resume plan JSON.
     const slug = argv[1];
     if (!slug) die('usage: resume <slug>');
     const runDir = findRunDir(slug);
+
+    // DASH-02: batch-level resume
+    const batchJsonPath = path.join(runDir, 'batch.json');
+    if (fs.existsSync(batchJsonPath)) {
+      let batchInfo;
+      try { batchInfo = JSON.parse(fs.readFileSync(batchJsonPath, 'utf-8')); } catch (e) { die(`batch.json parse error: ${e.message}`); }
+      const fileStatuses = [];
+      for (const f of (batchInfo.files || [])) {
+        const fileRunDir = f.run_dir || path.join(runDir, f.slug || f.fileSlug);
+        const fileSt = readStatus(fileRunDir);
+        const converged = fileSt ? fileSt.converged : false;
+        const phase = fileSt ? fileSt.phase : 'init';
+        fileStatuses.push({
+          slug: f.slug || f.fileSlug,
+          run_dir: fileRunDir,
+          converged,
+          phase,
+          needs_resume: !converged && phase !== 'max-rounds' && phase !== 'failed',
+        });
+      }
+      const toResume = fileStatuses.filter(f => f.needs_resume);
+      console.log(JSON.stringify({
+        kind: 'batch',
+        batch_slug: slug,
+        batch_dir: runDir,
+        total_files: fileStatuses.length,
+        converged: fileStatuses.filter(f => f.converged).length,
+        to_resume: toResume.length,
+        files: toResume,
+      }, null, 2));
+      break;
+    }
+
+    // Single-file resume (existing logic)
     const st = readStatus(runDir);
     const rounds = fs.readdirSync(runDir).filter(n => /^round-\d+$/.test(n)).map(n => parseInt(n.replace('round-', ''), 10)).sort((a, b) => a - b);
     const lastRound = rounds.length ? rounds[rounds.length - 1] : 1;
