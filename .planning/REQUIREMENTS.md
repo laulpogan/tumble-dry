@@ -9,17 +9,17 @@
 
 ### Git History Generation (HIGH PRIORITY — archaeologist integration)
 
-- [ ] **GIT-01** Each tumble-dry run auto-creates a branch `tumble-dry/<slug>` (or `tumble-dry/<batch-slug>`) at init time. All round artifacts committed per-round with convergence metadata in commit messages.
-- [ ] **GIT-02** Per-round commit message format: `tumble-dry: round N redraft (<slug>) — M material, K structural, drift=X.XX, converged={yes|no}`. Machine-parseable by archaeologist.
-- [ ] **GIT-03** On convergence (or forced-final), FINAL.md committed on the branch. If `--apply-to-source` set, source file update committed too.
-- [ ] **GIT-04** Auto-create local PR via `gh pr create` (when gh available) or print the command for manual execution. PR title: `tumble-dry: polish <slug>`. PR body: final REPORT.md content.
-- [ ] **GIT-05** Batch mode: one branch per batch with per-file × per-round commits. Squash-merge candidate. Branch name: `tumble-dry/<batch-slug>`.
-- [ ] **GIT-06** `--no-git` flag to disable git integration (for users who don't want branches/commits).
+- [x] **GIT-01** Each tumble-dry run auto-creates a branch `tumble-dry/<slug>` (or `tumble-dry/<batch-slug>`) at init time. All round artifacts committed per-round with convergence metadata in commit messages.
+- [x] **GIT-02** Per-round commit message format: `tumble-dry: round N redraft (<slug>) — M material, K structural, drift=X.XX, converged={yes|no}`. Machine-parseable by archaeologist.
+- [x] **GIT-03** On convergence (or forced-final), FINAL.md committed on the branch. If `--apply-to-source` set, source file update committed too.
+- [x] **GIT-04** Auto-create local PR via `gh pr create` (when gh available) or print the command for manual execution. PR title: `tumble-dry: polish <slug>`. PR body: final REPORT.md content.
+- [x] **GIT-05** Batch mode: one branch per batch with per-file × per-round commits. Squash-merge candidate. Branch name: `tumble-dry/<batch-slug>`.
+- [x] **GIT-06** `--no-git` flag to disable git integration (for users who don't want branches/commits).
 
 ### Apply to Source
 
-- [ ] **APPLY-01** `--apply-to-source` flag on slash command + CLI. After convergence, `cp FINAL.md <source-path>`. For office formats: `cp FINAL.<ext>` (if `--apply` roundtrip was also set). Committed on the tumble-dry branch per GIT-03.
-- [ ] **APPLY-02** Batch mode: applies to all converged files. Skips files that didn't converge (with warning).
+- [x] **APPLY-01** `--apply-to-source` flag on slash command + CLI. After convergence, `cp FINAL.md <source-path>`. For office formats: `cp FINAL.<ext>` (if `--apply` roundtrip was also set). Committed on the tumble-dry branch per GIT-03.
+- [x] **APPLY-02** Batch mode: applies to all converged files. Skips files that didn't converge (with warning).
 
 ### Structural Finding Register (solves convergence oscillation — BUG-4)
 
@@ -30,8 +30,8 @@
 
 ### Glob Expansion Fix (BUG-1)
 
-- [ ] **GLOB-01** `lib/glob-expand.cjs` correctly expands shell globs (`*.md`, `site/copy/*.md`, `**/*.md`) via `glob` npm package or Node.js `fs.glob` (Node 22+). Falls back to manual `fs.readdirSync` + filter for older Node versions.
-- [ ] **GLOB-02** `bin/tumble-dry.cjs init` accepts glob string as artifact arg; expands and routes to initBatch when N>1.
+- [x] **GLOB-01** `lib/glob-expand.cjs` correctly expands shell globs (`*.md`, `site/copy/*.md`, `**/*.md`) via `glob` npm package or Node.js `fs.glob` (Node 22+). Falls back to manual `fs.readdirSync` + filter for older Node versions.
+- [x] **GLOB-02** `bin/tumble-dry.cjs init` accepts glob string as artifact arg; expands and routes to initBatch when N>1.
 
 ### Drift Hard Gate Per Type
 

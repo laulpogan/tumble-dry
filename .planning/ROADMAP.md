@@ -10,7 +10,7 @@
 
 ## Phases
 
-- [ ] **Phase 9: GIT + PLUMBING** — git branch/commit per run, --apply-to-source, glob fix
+- [x] **Phase 9: GIT + PLUMBING** — git branch/commit per run, --apply-to-source, glob fix
 - [ ] **Phase 10: CONVERGENCE + UX** — structural register, drift hard gate, batch dashboard, component integration, release
 
 ---
