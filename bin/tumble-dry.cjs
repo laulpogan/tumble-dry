@@ -912,6 +912,21 @@ switch (cmd) {
     console.log(JSON.stringify(inferred, null, 2));
     break;
   }
+  case 'apply-patch': {
+    // COMP-02: apply a generated patch.
+    const slug = argv[1];
+    if (!slug) die('usage: apply-patch <slug>');
+    const runDir = findRunDir(slug);
+    const { applyPatch } = require('../lib/patch.cjs');
+    const result = applyPatch(runDir, { cwd });
+    if (result.ok) {
+      console.log(`Patch applied (${result.method}). Review with \`git diff\`.`);
+    } else {
+      console.error(`Patch not applied: ${result.reason}. ${result.hint || ''}`);
+    }
+    console.log(JSON.stringify(result, null, 2));
+    break;
+  }
   case 'register': {
     // REGISTER-04: manually register a structural finding.
     const slug = argv[1];
