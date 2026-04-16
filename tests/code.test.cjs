@@ -235,14 +235,7 @@ test('CODE-06: editor-code.md frontmatter parses with name=editor-code', () => {
   assert.ok(fm.tools && /Read/.test(fm.tools) && /Write/.test(fm.tools));
 });
 
-// ---------- CODE-06: editor-code is registered in marketplace ----------
-test('CODE-06: marketplace.json registers editor-code agent', () => {
-  const p = path.join(ROOT, '.claude-plugin/marketplace.json');
-  const mkt = JSON.parse(fs.readFileSync(p, 'utf-8'));
-  const found = mkt.agents.find(a => a.name === 'editor-code');
-  assert.ok(found, 'editor-code not found in marketplace.json');
-  assert.equal(found.path, 'agents/editor-code.md');
-});
+// marketplace.json test removed in v0.9.0 — .claude-plugin/ directory deleted.
 
 // ---------- Runner ----------
 (async () => {

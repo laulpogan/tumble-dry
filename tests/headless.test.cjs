@@ -33,20 +33,7 @@ test('orchestrator.md frontmatter parses with required fields', () => {
   assert.doesNotMatch(text, /^permissionMode:/m);
 });
 
-test('orchestrator.md is declared in marketplace.json', () => {
-  const mkt = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude-plugin', 'marketplace.json'), 'utf-8'));
-  const agents = (mkt.agents || []).map(a => a.name);
-  assert.ok(agents.includes('orchestrator'), 'orchestrator in marketplace.agents');
-});
-
-test('tumble-dry Skill is declared in marketplace.json', () => {
-  const mkt = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude-plugin', 'marketplace.json'), 'utf-8'));
-  assert.ok(Array.isArray(mkt.skills) && mkt.skills.length > 0, 'skills array present');
-  const skill = mkt.skills.find(s => s.name === 'tumble-dry');
-  assert.ok(skill, 'tumble-dry Skill registered');
-  assert.ok(skill.description && skill.description.length > 20, 'description present');
-  assert.ok(skill['argument-hint'] || skill.argument_hint, 'argument hint present');
-});
+// marketplace.json tests removed in v0.9.0 — .claude-plugin/ directory deleted.
 
 test('initStatus creates status.json with required fields', () => {
   const dir = tmpdir();

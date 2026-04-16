@@ -214,6 +214,6 @@ echo "Polish log:     .tumble-dry/$SLUG/polish-log.md"
 ## Notes
 
 - **Shared data plane.** Every state mutation runs through `bin/tumble-dry.cjs` subcommands (`init`, `brief-*`, `aggregate`, `drift`, `extract-redraft`, `finalize`, `report`, `status-*`). The slash command is control-plane only — it never writes run state directly.
-- **Agent dispatch.** Each agent's system prompt (from `agents/*.md`) is embedded in the brief by the `brief-*` subcommands. The slash command reads the brief from disk and passes it as the Agent `prompt` parameter. No custom subagent_type, no plugin registry.
+- **Agent dispatch.** Each agent's system prompt (from `agents/*.md`) is embedded in the brief by the `brief-*` subcommands. The slash command reads the brief from disk and passes it as the Agent `prompt` parameter. No custom agent types, no plugin registry.
 - **Parallel fanout.** Multiple Agent() calls in ONE assistant turn dispatch concurrently. All N reviewers in a single turn is critical for correct convergence.
 - **Non-destructive invariant.** Source files are never touched. Working copy + per-round history under `.tumble-dry/<slug>/`.
