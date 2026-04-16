@@ -4,7 +4,7 @@
 
 Works across four artifact families: **prose** (blog posts, essays, memos, ad copy, landing pages), **office formats** (.docx, .pptx, .xlsx, .pdf — projected to markdown for review), **code** (source files and directories — AST-aware drift, language-specific style anchors, `verify_cmd` gate), and **decks** (markdown decks natively; .pptx via the office-format loader).
 
-> **v0.9.0 (2026-04-15):** HARNESS-ONLY release. All Anthropic API key logic removed. Product runs entirely through Claude Code session auth. Agent dispatch uses plain `Agent(prompt=...)` with no custom subagent_type. `install.sh` symlinks the command. `.claude-plugin/` removed (CC never discovered it). See [CHANGELOG.md](CHANGELOG.md).
+> **v0.10.0 (2026-04-16):** Convergence + UX polish. Structural finding register stops oscillation. Drift hard gate per type. Batch dashboard. Component integration patches. Git integration (v0.9.1). See [CHANGELOG.md](CHANGELOG.md).
 
 ## Install
 
@@ -145,6 +145,46 @@ Markdown-only users can skip `npm install` entirely.
 
 Source is **never modified**. On `init`, tumble-dry copies it into `.tumble-dry/<slug>/working.md` and operates on that copy. Each round produces two history snapshots (`round-N-input.md`, `round-N-output.md`) so any version can be reconstructed without re-running.
 
+## Git integration (v0.9.1+)
+
+Every tumble-dry run creates a branch `tumble-dry/<slug>` and commits per-round artifacts with convergence metadata. Archaeologist (or any git tool) can trace the full polish arc via `git log`.
+
+```bash
+/tumble-dry post.md                         # creates branch tumble-dry/post, commits each round
+/tumble-dry post.md --apply-to-source       # also copies FINAL.md back to source, committed on branch
+/tumble-dry post.md --no-git                # disable git integration entirely
+```
+
+Commit message format: `tumble-dry: round N redraft (<slug>) -- M material, K structural, drift=X.XX, converged={yes|no}`
+
+## Structural finding register (v0.10.0+)
+
+Structural findings that persist across rounds are auto-acknowledged so they stop blocking convergence. Prevents the oscillation bug where the editor introduces new material to address old structural findings, which triggers new structural critiques.
+
+```bash
+tumble-dry register <slug> "pricing model is unclear"   # manually acknowledge a finding
+```
+
+Register is surfaced in aggregate.md and REPORT.md. Registered findings are excluded from the material count used for convergence gating.
+
+## Batch dashboard (v0.10.0+)
+
+```bash
+tumble-dry status                           # shows batch summary: [N/M converged] etc.
+tumble-dry resume <batch-slug>              # lists unconverged files for re-dispatch
+```
+
+## Component integration (v0.10.0+)
+
+After convergence, generate a patch to apply polished copy back to source files:
+
+```bash
+/tumble-dry component.tsx --patch           # produces PATCH.diff after convergence
+tumble-dry apply-patch <slug>               # applies via git apply
+```
+
+For JSX/TSX sources, the patch targets string literals and JSX text content rather than producing a full file diff.
+
 ## CLI reference (data-plane)
 
 ```bash
@@ -156,7 +196,9 @@ node bin/tumble-dry.cjs brief-editor <slug> <round>
 node bin/tumble-dry.cjs aggregate <slug> <round>
 node bin/tumble-dry.cjs drift <slug> <round> <before> <after>
 node bin/tumble-dry.cjs extract-redraft <slug> <round>
-node bin/tumble-dry.cjs finalize <slug> [--apply]
+node bin/tumble-dry.cjs finalize <slug> [--apply] [--apply-to-source]
+node bin/tumble-dry.cjs register <slug> <finding-summary>
+node bin/tumble-dry.cjs apply-patch <slug>
 node bin/tumble-dry.cjs config
 node bin/tumble-dry.cjs status
 node bin/tumble-dry.cjs resume <slug>

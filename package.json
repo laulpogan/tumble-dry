@@ -1,6 +1,6 @@
 {
   "name": "tumble-dry",
-  "version": "0.7.0",
+  "version": "0.10.0",
   "description": "Polish written work AND code through simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor (prose) or style-anchored editor (code), AST-aware drift, converges on material findings.",
   "private": true,
   "type": "commonjs",

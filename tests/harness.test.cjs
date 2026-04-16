@@ -84,9 +84,9 @@ test('install.sh exists and is executable', () => {
   assert.ok(stat.mode & 0o111, 'install.sh not executable');
 });
 
-test('VERSION is 0.9.0', () => {
+test('VERSION is 0.10.0', () => {
   const v = fs.readFileSync(path.join(ROOT, 'VERSION'), 'utf-8').trim();
-  assert.equal(v, '0.9.0');
+  assert.equal(v, '0.10.0');
 });
 
 test('README.md mentions no API keys', () => {

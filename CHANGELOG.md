@@ -2,6 +2,34 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [0.10.0] — 2026-04-16 — Convergence + UX polish
+
+**Theme:** Structural finding register stops convergence oscillation. Drift hard gate per artifact type splits redrafts when editor rewrites too aggressively. Batch dashboard shows at-a-glance progress. Component integration produces patches for applying polished copy back to source files.
+
+### Added
+
+- **Structural finding register** (`lib/structural-register.cjs`) — persistent structural findings that survive 2+ rounds are auto-acknowledged so they stop re-firing and blocking convergence. `tumble-dry register <slug> <finding-summary>` for manual registration. Register surfaced in REPORT.md and aggregate.md. (REGISTER-01..04)
+- **Drift hard gate** (`lib/drift-gate.cjs`) — when editor's `content_drift` exceeds `configs.json[type].drift_threshold`, the redraft is split into `safe-redraft.md` (within threshold) and `structural-redraft.md` (full rewrite). Headless mode auto-applies but commits separately with distinct message. (DRIFT-01..02)
+- **Batch dashboard** — `tumble-dry status` shows batch-level summary line: `[N/M init] [K/M converged] [J/M in-progress] [L/M forced-final]`. (DASH-01)
+- **Batch resume** — `tumble-dry resume <batch-slug>` walks `batch.json`, lists unconverged files for re-dispatch. (DASH-02)
+- **Component integration / patch** (`lib/patch.cjs`) — `--patch` flag produces `PATCH.diff` via unified diff. JSX/TSX sources get targeted text-content replacements. `tumble-dry apply-patch <slug>` applies via `git apply`. (COMP-01..02)
+- **Test suites** — `tests/register.test.cjs` (9 tests), `tests/drift-gate.test.cjs` (4 tests), `tests/dashboard.test.cjs` (2 tests), `tests/patch.test.cjs` (5 tests). All existing suites still pass.
+
+### Changed
+
+- `renderAggregate` accepts `opts.runDir` to load the structural register and subtract acknowledged findings from convergence material count.
+- `writeRoundReport` and `writeFinalReport` surface register count and summaries.
+- `voice.cjs` exports `splitSentences` (used by drift gate).
+- CLI help text updated with `register` and `apply-patch` subcommands.
+- VERSION bumped to 0.10.0.
+
+### Phase 9 (shipped in v0.9.1, documented here for completeness)
+
+- Git integration: per-run branch, per-round commits with convergence metadata, FINAL commit, PR hint.
+- `--apply-to-source` copies FINAL.md back to source path.
+- `--no-git` flag disables all git operations.
+- Glob expansion via `fs.globSync` (Node 22+) with manual fallback.
+
 ## [0.9.1] — 2026-04-15 — Research-backed persona & convergence hardening
 
 **Theme:** Nine fixes from the psychographic audit, design-thinking audit, and LLM-as-critic literature review. Persona library gains three new fields, 41 anti-persona declarations, freshness mechanism, and two inclusive-access personas. Convergence logic gains novelty checking and adversarial-agreement weighting. Reviewer agent gains anti-sycophancy escalation.
