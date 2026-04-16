@@ -23,10 +23,10 @@
 
 ### Structural Finding Register (solves convergence oscillation — BUG-4)
 
-- [ ] **REGISTER-01** New file `.tumble-dry/<slug>/structural-register.json`: array of `{finding_summary, registered_at_round, status: 'acknowledged'|'deferred'|'resolved', reason}`.
-- [ ] **REGISTER-02** After each aggregate, if structural findings persist from prior round: auto-register them (status: 'acknowledged') unless they were NEW this round. Registered findings are excluded from the material count for convergence purposes — they stop re-firing.
-- [ ] **REGISTER-03** Surface register in REPORT.md: "3 structural findings acknowledged (not blocking convergence): [summaries]". User sees what was parked.
-- [ ] **REGISTER-04** `tumble-dry register <slug> <finding-summary>` CLI subcommand for manual registration mid-run.
+- [x] **REGISTER-01** New file `.tumble-dry/<slug>/structural-register.json`: array of `{finding_summary, registered_at_round, status: 'acknowledged'|'deferred'|'resolved', reason}`.
+- [x] **REGISTER-02** After each aggregate, if structural findings persist from prior round: auto-register them (status: 'acknowledged') unless they were NEW this round. Registered findings are excluded from the material count for convergence purposes — they stop re-firing.
+- [x] **REGISTER-03** Surface register in REPORT.md: "3 structural findings acknowledged (not blocking convergence): [summaries]". User sees what was parked.
+- [x] **REGISTER-04** `tumble-dry register <slug> <finding-summary>` CLI subcommand for manual registration mid-run.
 
 ### Glob Expansion Fix (BUG-1)
 
@@ -35,23 +35,23 @@
 
 ### Drift Hard Gate Per Type
 
-- [ ] **DRIFT-01** When editor's content_drift exceeds `personas/configs.json[artifact_type].drift_threshold`, the redraft is split into "safe changes" (under threshold) and "structural changes" (over threshold). Structural changes surface for user confirmation before being applied.
-- [ ] **DRIFT-02** If no interactive user (headless/batch mode): structural changes auto-apply but are flagged in REPORT.md + committed separately on the git branch with a distinct commit message (`tumble-dry: round N structural redraft (drift=X.XX, exceeds threshold Y.YY)`).
+- [x] **DRIFT-01** When editor's content_drift exceeds `personas/configs.json[artifact_type].drift_threshold`, the redraft is split into "safe changes" (under threshold) and "structural changes" (over threshold). Structural changes surface for user confirmation before being applied.
+- [x] **DRIFT-02** If no interactive user (headless/batch mode): structural changes auto-apply but are flagged in REPORT.md + committed separately on the git branch with a distinct commit message (`tumble-dry: round N structural redraft (drift=X.XX, exceeds threshold Y.YY)`).
 
 ### Batch Dashboard
 
-- [ ] **DASH-01** `tumble-dry status` shows batch-level summary when batch runs exist: `[N/M init] [K/M converged] [J/M in-progress] [L/M forced-final]`.
-- [ ] **DASH-02** Batch-level resume: `tumble-dry resume <batch-slug>` picks up where the batch left off (skips converged files, resumes in-progress files, inits remaining files).
+- [x] **DASH-01** `tumble-dry status` shows batch-level summary when batch runs exist: `[N/M init] [K/M converged] [J/M in-progress] [L/M forced-final]`.
+- [x] **DASH-02** Batch-level resume: `tumble-dry resume <batch-slug>` picks up where the batch left off (skips converged files, resumes in-progress files, inits remaining files).
 
 ### Component Integration Mode
 
-- [ ] **COMP-01** `--patch` flag. After convergence, diff FINAL.md against the source and produce a unified diff patch at `.tumble-dry/<slug>/PATCH.diff`. For JSX/TSX sources: the patch applies to the component file, replacing string literals / JSX text content with the polished versions.
-- [ ] **COMP-02** `tumble-dry apply-patch <slug>` applies the patch via `git apply`. User reviews diff first.
+- [x] **COMP-01** `--patch` flag. After convergence, diff FINAL.md against the source and produce a unified diff patch at `.tumble-dry/<slug>/PATCH.diff`. For JSX/TSX sources: the patch applies to the component file, replacing string literals / JSX text content with the polished versions.
+- [x] **COMP-02** `tumble-dry apply-patch <slug>` applies the patch via `git apply`. User reviews diff first.
 
 ### Release
 
-- [ ] **REL-01** CHANGELOG v0.10.0. VERSION bump. Push + tag. SlanchaAi sync.
-- [ ] **REL-02** README update: git integration section, --apply-to-source, structural register, batch dashboard.
+- [x] **REL-01** CHANGELOG v0.10.0. VERSION bump. Push + tag. SlanchaAi sync.
+- [x] **REL-02** README update: git integration section, --apply-to-source, structural register, batch dashboard.
 
 ---
 
