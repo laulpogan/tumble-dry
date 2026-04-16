@@ -1,13 +1,11 @@
 ---
-description: Polish content via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings. Runs headless in an orchestrator subagent — main session sees only progress + REPORT.md.
+description: Polish content via simulated public contact — parallel reviewer personas, assumption audit, voice-preserving editor, converges on material findings. Dispatches agents with embedded prompts read from disk.
 argument-hint: <artifact|glob|dir|status|resume <slug>> [--dry-run] [--per-file-audience] [--apply] [--panel-size N] [--no-auto-redraft]
 ---
 
 # /tumble-dry
 
-Polish a written artifact (or a batch, or a directory) end-to-end. Dispatches a headless `orchestrator` subagent that runs the full convergence loop, emits `status.json` + per-round `REPORT.md`, and hands reviewer/editor fanouts back to this session one wave at a time.
-
-Main session sees: one line per round + final `REPORT.md`. No raw critique floods, no aggregate dumps.
+Polish a written artifact (or a batch, or a directory) end-to-end. Dispatches each agent via `Agent(prompt=...)` with the agent system prompt and brief embedded inline. Reviewers fan out in parallel (multiple Agent calls in ONE assistant turn). Main session drives the loop round by round.
 
 ## Quickstart examples
 
@@ -22,20 +20,16 @@ Main session sees: one line per round + final `REPORT.md`. No raw critique flood
 ## Resolve plugin home
 
 ```bash
-if [ -d "$HOME/.claude/plugins/tumble-dry" ]; then
-  TD_HOME="$HOME/.claude/plugins/tumble-dry"
-elif [ -d "$HOME/Source/tumble-dry" ]; then
+if [ -d "$HOME/Source/tumble-dry" ]; then
   TD_HOME="$HOME/Source/tumble-dry"
+elif [ -d "$HOME/.claude/plugins/tumble-dry" ]; then
+  TD_HOME="$HOME/.claude/plugins/tumble-dry"
 else
-  echo "ERROR: tumble-dry plugin not found"; exit 2
+  echo "ERROR: tumble-dry not found. Clone to ~/Source/tumble-dry and run install.sh"; exit 2
 fi
 ```
 
 ## Validate + parse args
-
-```bash
-node "$TD_HOME/bin/validate-plugin.cjs" --root "$TD_HOME" 2>&1 || { echo "[tumble-dry] plugin spec validation failed"; exit 2; }
-```
 
 Parse `$ARGUMENTS` into positional args (artifact, subcommand) + flags (`--dry-run`, `--apply`, `--per-file-audience`, `--panel-size`, `--no-auto-redraft`). The first positional may be a subcommand: `status` or `resume <slug>`.
 
@@ -54,7 +48,7 @@ RESUME_JSON=$(node "$TD_HOME/bin/tumble-dry.cjs" resume "$SLUG")
 echo "$RESUME_JSON"
 ```
 
-Parse the returned JSON for `resume_from_round` + `resume_from_phase`, then re-dispatch the orchestrator with those args (see "Dispatch orchestrator" below).
+Parse the returned JSON for `resume_from_round` + `resume_from_phase`, then re-enter the loop below at the appropriate phase.
 
 ## Dry-run mode
 
@@ -78,7 +72,6 @@ fi
 ## Initialize (single or batch)
 
 ```bash
-# Detect batch by checking for glob/dir
 if [[ "$ARTIFACT" == *"*"* ]] || [ -d "$ARTIFACT" ]; then
   INIT_OUT=$(node "$TD_HOME/bin/tumble-dry.cjs" init-batch "$ARTIFACT")
   KIND=batch
@@ -87,34 +80,123 @@ else
   KIND=single
 fi
 SLUG=$(echo "$INIT_OUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);console.log(j.batch_slug||j.slug||"")}catch{console.log("")}}')
-echo "[tumble-dry] dispatched orchestrator (kind=$KIND slug=$SLUG) → polling…"
+echo "[tumble-dry] initialized (kind=$KIND slug=$SLUG)"
 ```
 
-## Dispatch orchestrator (wave loop)
+## Round 1: Audience + Auditor (ONE turn, 2 parallel Agents)
 
-Invoke the headless orchestrator subagent with the run context. The orchestrator writes `.tumble-dry/<slug>/dispatch-plan.json` describing the next Task fanout it needs. This session reads the plan, emits the fanout in ONE assistant turn, then re-invokes the orchestrator.
-
-```
-Task(
-  subagent_type="orchestrator",
-  description="Advance tumble-dry loop",
-  prompt="Run the tumble-dry orchestrator for slug=<SLUG>, kind=<KIND>, mode=<MODE>, cwd=$PWD. Read .tumble-dry/<SLUG>/status.json for current state. Perform the current phase, write status.json + dispatch-plan.json, return one-line confirmation."
-)
-```
-
-After the orchestrator returns, read the dispatch plan:
+Generate briefs, then read agent prompts and briefs from disk, dispatch both agents in ONE assistant turn.
 
 ```bash
-PLAN=$(cat ".tumble-dry/$SLUG/dispatch-plan.json")
-DONE=$(echo "$PLAN" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).done?"1":"0")}catch{console.log("0")}}')
+AUDIENCE_BRIEF=$(node "$TD_HOME/bin/tumble-dry.cjs" brief-audience "$SLUG" 1 "${PANEL_SIZE:-5}")
+AUDITOR_BRIEF=$(node "$TD_HOME/bin/tumble-dry.cjs" brief-auditor "$SLUG" 1)
 ```
 
-If `DONE=1`, cat `REPORT.md` and exit. Otherwise, emit the Task fanout described in the plan (one Task call per `dispatch_plan.tasks[]` entry, all in the same assistant turn). Then re-invoke the orchestrator for the next wave.
+Read the brief files:
 
-Render progress after each wave:
+```bash
+AUDIENCE_BRIEF_CONTENT=$(cat "$AUDIENCE_BRIEF")
+AUDITOR_BRIEF_CONTENT=$(cat "$AUDITOR_BRIEF")
+```
+
+Now dispatch BOTH agents in this single assistant turn — they run in parallel:
+
+Agent(description="Infer audience panel", prompt="You are a tumble-dry agent. Follow the brief exactly. Output only the requested deliverable — no preamble, no meta-commentary.
+
+$AUDIENCE_BRIEF_CONTENT
+
+Write your output to .tumble-dry/$SLUG/round-1/audience.md. Reply only with 'wrote audience.md' — do NOT include the deliverable in your reply.")
+
+Agent(description="Surface assumptions", prompt="You are a tumble-dry agent. Follow the brief exactly. Output only the requested deliverable — no preamble, no meta-commentary.
+
+$AUDITOR_BRIEF_CONTENT
+
+Write your output to .tumble-dry/$SLUG/round-1/assumption-audit.md. Reply only with 'wrote assumption-audit.md' — do NOT include the deliverable in your reply.")
+
+## Loop: Reviewer waves until convergence
+
+Set ROUND=1. For each round:
+
+### Generate reviewer briefs
+
+```bash
+BRIEFS_JSON=$(node "$TD_HOME/bin/tumble-dry.cjs" brief-reviewers "$SLUG" "$ROUND")
+```
+
+### Dispatch ALL reviewers in ONE assistant turn
+
+For each entry in BRIEFS_JSON (which is a JSON array of `{slug, name, brief_path}`):
+
+Read each brief file, then emit ALL Agent calls in a single turn. Example for 5 reviewers:
+
+```bash
+BRIEF_1=$(cat "<brief_path_1>")
+BRIEF_2=$(cat "<brief_path_2>")
+# ... etc for each reviewer
+```
+
+Agent(description="Critique: <persona-1>", prompt="You are a tumble-dry agent. Follow the brief exactly. Output only the requested deliverable — no preamble, no meta-commentary.
+
+$BRIEF_1
+
+Write your critique to .tumble-dry/$SLUG/round-$ROUND/critique-<persona-1-slug>.md. Reply only with 'wrote critique-<persona-1-slug>.md' — do NOT include the critique in your reply.")
+
+Agent(description="Critique: <persona-2>", prompt="...$BRIEF_2...")
+
+... (ALL N reviewers in this ONE turn — they run in parallel)
+
+### Aggregate
+
+```bash
+AGG_JSON=$(node "$TD_HOME/bin/tumble-dry.cjs" aggregate "$SLUG" "$ROUND")
+CONVERGED=$(echo "$AGG_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).converged?"1":"0")}catch{console.log("0")}}')
+```
+
+Render progress:
 
 ```bash
 node "$TD_HOME/bin/tumble-dry.cjs" status-render "$SLUG"
+```
+
+If CONVERGED=1 or ROUND >= max_rounds, proceed to finalize. Otherwise, dispatch the editor.
+
+### Editor (ONE turn, 1 Agent)
+
+```bash
+EDITOR_BRIEF_PATH=$(node "$TD_HOME/bin/tumble-dry.cjs" brief-editor "$SLUG" "$ROUND")
+EDITOR_BRIEF_CONTENT=$(cat "$EDITOR_BRIEF_PATH")
+```
+
+Agent(description="Redraft artifact", prompt="You are a tumble-dry agent. Follow the brief exactly. Output only the requested deliverable — no preamble, no meta-commentary.
+
+$EDITOR_BRIEF_CONTENT
+
+Write your redraft to .tumble-dry/$SLUG/round-$ROUND/proposed-redraft.md. Reply only with 'wrote proposed-redraft.md' — do NOT include the redraft in your reply.")
+
+### Extract redraft + drift + advance round
+
+```bash
+STAGED=$(node "$TD_HOME/bin/tumble-dry.cjs" extract-redraft "$SLUG" "$ROUND")
+ARTIFACT_PATH=$(cat ".tumble-dry/$SLUG/artifact.path")
+node "$TD_HOME/bin/tumble-dry.cjs" drift "$SLUG" "$ROUND" "$ARTIFACT_PATH" "$STAGED"
+# Apply redraft to working copy
+cp "$STAGED" "$ARTIFACT_PATH"
+```
+
+Increment ROUND, create next round dir, loop back to "Generate reviewer briefs."
+
+```bash
+ROUND=$((ROUND + 1))
+node "$TD_HOME/bin/tumble-dry.cjs" new-round "$SLUG"
+```
+
+## Finalize
+
+```bash
+APPLY_FLAG=""
+if [ "$APPLY" = "true" ]; then APPLY_FLAG="--apply"; fi
+node "$TD_HOME/bin/tumble-dry.cjs" finalize "$SLUG" $APPLY_FLAG
+node "$TD_HOME/bin/tumble-dry.cjs" report "$SLUG" final
 ```
 
 ## Final output
@@ -131,7 +213,7 @@ echo "Polish log:     .tumble-dry/$SLUG/polish-log.md"
 
 ## Notes
 
-- **Shared data plane.** Every state mutation runs through `bin/tumble-dry.cjs` subcommands (`init`, `init-batch`, `brief-*`, `aggregate`, `drift`, `extract-redraft`, `finalize`, `report`, `status-*`). The slash command is control-plane only — it never writes run state directly.
-- **Headless fallback.** For CI / no-Claude-Code: `bin/tumble-dry-loop.cjs` runs the same loop via the Anthropic API (requires `ANTHROPIC_API_KEY`).
+- **Shared data plane.** Every state mutation runs through `bin/tumble-dry.cjs` subcommands (`init`, `brief-*`, `aggregate`, `drift`, `extract-redraft`, `finalize`, `report`, `status-*`). The slash command is control-plane only — it never writes run state directly.
+- **Agent dispatch.** Each agent's system prompt (from `agents/*.md`) is embedded in the brief by the `brief-*` subcommands. The slash command reads the brief from disk and passes it as the Agent `prompt` parameter. No custom subagent_type, no plugin registry.
+- **Parallel fanout.** Multiple Agent() calls in ONE assistant turn dispatch concurrently. All N reviewers in a single turn is critical for correct convergence.
 - **Non-destructive invariant.** Source files are never touched. Working copy + per-round history under `.tumble-dry/<slug>/`.
-- **Subagent-dispatch constraint.** Plugin-shipped subagents cannot spawn other subagents (Task tool is stripped at load time). The orchestrator is therefore a dispatch-plan *emitter*; this session owns the Task fanout. See `.planning/phases/08-ux-rebuild/08-FEASIBILITY.md`.
