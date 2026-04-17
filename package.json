@@ -11,11 +11,12 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "node tests/harden.test.cjs && node tests/validate-plugin.test.cjs && node tests/format.test.cjs && node tests/code.test.cjs && node tests/roundtrip.test.cjs",
+    "test": "node tests/harden.test.cjs && node tests/validate-plugin.test.cjs && node tests/format.test.cjs && node tests/code.test.cjs && node tests/roundtrip.test.cjs && node tests/clean-final.test.cjs",
     "test:harden": "node tests/harden.test.cjs",
     "test:format": "node tests/format.test.cjs",
     "test:code": "node tests/code.test.cjs",
     "test:roundtrip": "node tests/roundtrip.test.cjs",
+    "test:clean": "node tests/clean-final.test.cjs",
     "validate-plugin": "node bin/validate-plugin.cjs"
   },
   "optionalDependencies": {

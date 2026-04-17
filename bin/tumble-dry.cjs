@@ -484,13 +484,15 @@ switch (cmd) {
     break;
   }
   case 'finalize': {
-    // Accept positional slug + optional --apply/--apply-to-source flag (ROUNDTRIP-01, APPLY-01).
+    // Accept positional slug + optional --apply/--apply-to-source/--clean flags
+    // (ROUNDTRIP-01, APPLY-01, CLEAN-01).
     const positionals = argv.slice(1).filter(a => !a.startsWith('--'));
     const flags = argv.slice(1).filter(a => a.startsWith('--'));
     const slug = positionals[0];
     const applyRoundtrip = flags.includes('--apply');
     const applyToSource = APPLY_TO_SOURCE || flags.includes('--apply-to-source');
-    if (!slug) die('usage: finalize <slug> [--apply] [--apply-to-source]');
+    const emitClean = flags.includes('--clean');
+    if (!slug) die('usage: finalize <slug> [--apply] [--apply-to-source] [--clean]');
     const runDir = findRunDir(slug);
     const artifactPath = fs.readFileSync(path.join(runDir, 'artifact.path'), 'utf-8').trim();
     const sourcePathFile = path.join(runDir, 'source.path');
@@ -610,6 +612,16 @@ switch (cmd) {
       }
     }
 
+    // CLEAN-01: optional comment-free shipping draft alongside FINAL.md.
+    let cleanPathOut = null;
+    if (emitClean) {
+      const { cleanFinal } = require('../lib/clean-final.cjs');
+      const cleaned = cleanFinal(fs.readFileSync(finalPath, 'utf-8'));
+      cleanPathOut = path.join(runDir, 'FINAL-clean.md');
+      fs.writeFileSync(cleanPathOut, cleaned, 'utf-8');
+      console.error(`[tumble-dry] wrote FINAL-clean.md (comment-free shipping draft)`);
+    }
+
     // GIT-04: PR hint.
     if (gitInt.isEnabled()) {
       gitInt.prHint(slug, runDir);
@@ -618,7 +630,23 @@ switch (cmd) {
 
     const out = { final: finalPath, polish_log: path.join(runDir, 'polish-log.md') };
     if (roundtripOut) out.roundtrip = roundtripOut;
+    if (cleanPathOut) out.clean = cleanPathOut;
     console.log(JSON.stringify(out, null, 2));
+    break;
+  }
+  case 'clean': {
+    // CLEAN-02: post-hoc comment-stripper for an already-finalized run.
+    // Reads FINAL.md, writes FINAL-clean.md alongside it.
+    const slug = argv[1];
+    if (!slug) die('usage: clean <slug>');
+    const runDir = findRunDir(slug);
+    const finalPath = path.join(runDir, 'FINAL.md');
+    if (!fs.existsSync(finalPath)) die(`FINAL.md not found for slug '${slug}' (run finalize first)`);
+    const { cleanFinal } = require('../lib/clean-final.cjs');
+    const cleaned = cleanFinal(fs.readFileSync(finalPath, 'utf-8'));
+    const cleanPath = path.join(runDir, 'FINAL-clean.md');
+    fs.writeFileSync(cleanPath, cleaned, 'utf-8');
+    console.log(JSON.stringify({ clean: cleanPath, source: finalPath }, null, 2));
     break;
   }
   case 'init-batch': {
@@ -985,6 +1013,7 @@ switch (cmd) {
     console.error('  extract-redraft <slug> <round>');
     console.error('  register <slug> <finding-summary>');
     console.error('  apply-patch <slug>');
-    console.error('  finalize <slug> [--apply] [--apply-to-source]');
+    console.error('  finalize <slug> [--apply] [--apply-to-source] [--clean]');
+    console.error('  clean <slug>');
     process.exit(cmd ? 2 : 0);
 }
