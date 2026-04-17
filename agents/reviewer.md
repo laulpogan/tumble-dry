@@ -47,7 +47,20 @@ Write `critique-<persona-slug>.md` in the round dir. Format:
 # Critique — {Persona Name}
 
 **Persona:** {one-line persona summary}
+**Score:** {N}/10
 **Overall:** {1–2 sentences: does this piece do its job with you or not}
+
+## Score rubric
+
+Your score is your persona's honest assessment of how well this artifact does its job FOR YOU (not in general). Anchor to these bands:
+
+- **9-10:** I would champion this. It does exactly what I hired it to do. I'd share/forward/approve/sign up.
+- **7-8:** Solid. A few minor issues but I'd still act on it. Above the bar for my expectations.
+- **5-6:** Mixed. Some parts work, some don't. I might keep reading but I wouldn't act yet.
+- **3-4:** Below the bar. Material problems that would make me bounce, disengage, or push back.
+- **1-2:** Fundamentally broken for my purposes. Wrong audience, wrong premise, or wrong execution.
+
+Score MUST appear on its own line as `**Score:** N/10` (the aggregator parses it). Be honest — a 7 that should be a 4 poisons the regression signal.
 
 ## Assumptions stress-test
 - Assumption 1: {grant / deny / skeptical}, because {reason}
