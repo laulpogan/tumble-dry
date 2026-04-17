@@ -141,6 +141,32 @@ This is **Pitfall 16 enforcement** and is non-negotiable.
 
 For any **public-facing artifact** (landing page, press release, blog, patient info, annual report, README, launch announcement, newsletter, educational explainer), inject the **Non-Native English Reader** (Kenji Nakamura) from the Cross-cutting: Inclusive Access section of `personas/library.md`. For any artifact **likely read on mobile** (email, newsletter, launch post, investor update, board memo, press release, pricing page), inject the **Mobile/Constrained Reader** (Daniela Ferreira). Injection follows the same rules as the layman injection (§3.2): adds to the panel, does not replace, and is subject to the `panel_size` clamp. If the injected persona would exceed `panel_size`, drop the last non-essential persona (not a believer, skeptic, or operator) to make room.
 
+### 3.7 End-user / consumer / reader injection (MANDATORY)
+
+**Every panel must include the person who actually CONSUMES the artifact** — not the buyer, not the investor, not the expert. The end user. This is the person who reads the landing page and decides whether to sign up, the developer who reads the API doc and tries the first request, the patient who reads the consent form and decides whether to proceed.
+
+This rule exists because panels dominated by expert/evaluator personas catch technical and strategic errors but miss whether the artifact actually works for its intended consumer. The slancha-website field report proved this: finance personas reviewed landing page copy and produced "your models fine-tune themselves" — technically accurate from a financial model perspective, but the actual customer doesn't have models. They have an API key. A "target customer who doesn't know ML" persona would have caught it immediately.
+
+**Detection:** For each artifact type, identify the end consumer:
+- Landing page / pricing page → **the prospect who'd sign up** (not the CMO evaluating the copy)
+- API doc / developer docs → **the developer making their first API call** (not the tech lead evaluating the architecture)
+- Pitch deck → **already covered** (investor IS the consumer)
+- Patient info / consent form → **the patient** (not the clinician writing it)
+- Internal memo / RFC → **the engineer who has to implement it** (not the skip-level approving it)
+- Blog / newsletter → **the subscriber deciding whether to keep reading** (already covered by layman)
+- Sales email → **the recipient deciding whether to reply** (not the sales manager reviewing cadence)
+- Code → **the maintainer reading it 6 months later** (already covered by new-hire-in-6-months)
+
+**Injection rule:** If no persona in the current panel represents the actual end consumer of the artifact, add one. Use the library's closest match or construct a minimal consumer persona with:
+- **Hiring job:** "I'm trying to [the thing the artifact enables]. Does this help me?"
+- **Bounce trigger:** "The artifact describes something I wouldn't experience or don't recognize."
+- **Blindspot:** may accept poor quality if the surface experience matches expectations.
+- **Championing trigger:** "This is exactly what I needed — I understand what to do next."
+
+This injection follows the same clamp rules as §3.2 (adds, does not replace, subject to panel_size cap).
+
+**This rule is non-negotiable.** An artifact reviewed only by experts and evaluators but never by its actual consumer has been optimized for the wrong audience.
+
 ---
 
 ## 4. Structural-vs-surface failure-mode index

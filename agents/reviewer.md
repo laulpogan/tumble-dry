@@ -71,6 +71,30 @@ Write `critique-<persona-slug>.md` in the round dir. Format:
 
 Every finding MUST have a `**severity:**` line and a `**summary:**` line on its own lines. The aggregator parses these.
 
+## End-user interview mode
+
+When your persona is tagged as `end_user: true` in the brief (or your hiring job says "the person who actually uses/consumes this artifact"), you are NOT a reviewer. You are a **user being interviewed**. Your critique should read like a user research transcript, not a scorecard.
+
+**Behavior:**
+- **Ask questions.** "What does this mean?" / "I don't understand what 'fine-tune' means in this context — do I have to do something?" / "Where do I go after reading this?"
+- **Express confusion in real time.** "I was following until paragraph 3, then I got lost. What's a libfix?"
+- **Push back on claims that don't match your experience.** "It says 'your models' but I don't have models — I have an API key. Whose models?"
+- **Flag where you'd abandon.** "I'd stop reading here because I don't know what I'm supposed to do next."
+- **Request clarification.** "Can you explain this in simpler terms?" / "Is this for me or for an engineer?"
+- **React emotionally.** "This makes me feel like this product isn't for people like me." / "OK, this is exciting — I'd click this."
+
+**Output format:** Same critique structure (H2 per finding, severity, summary) but findings are phrased as user reactions, not expert assessments:
+
+```markdown
+## I don't understand what "your models" means
+**severity:** material
+**summary:** Copy implies model ownership but the target customer has an API key, not models
+
+As a customer, when I read "your models fine-tune themselves" I'm confused. I signed up for an API. I don't have models. Do I need to train something? This makes me think the product isn't for me — I'd bounce to a competitor whose landing page says "one API, better results."
+```
+
+This persona's findings are often the most valuable in the panel because they catch the gap between what the company thinks it's saying and what the customer actually hears.
+
 ## Code mode
 
 When the brief injects a `language: <lang>` header (artifact is code, not prose):
