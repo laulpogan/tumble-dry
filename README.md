@@ -185,6 +185,17 @@ tumble-dry apply-patch <slug>               # applies via git apply
 
 For JSX/TSX sources, the patch targets string literals and JSX text content rather than producing a full file diff.
 
+## Comment-free shipping draft
+
+By design, `FINAL.md` preserves the editor's inline reviewer attributions, per-round status callouts, and process-tracker blocks (Structural decisions required, Blocking-item tracker, Decision ownership) so decisions stay traceable. For a copy-paste-ready version, produce a stripped `FINAL-clean.md`:
+
+```bash
+tumble-dry finalize <slug> --clean     # produce FINAL.md AND FINAL-clean.md in one pass
+tumble-dry clean <slug>                # post-hoc on an already-finalized run
+```
+
+The cleaner is a deterministic regex pass over known annotation shapes — no LLM. It strips: `**Round-N convergence note (editor):**` paragraphs, bracketed reviewer blocks containing reviewer slugs / round refs / `tracked as B\d+` / `REVIEWERS —` / `STRUCTURAL —`, reviewer-attribution dash clauses on bullets and bold labels, role annotations on reviewer-list entries (`— **decide:**`, `— reviewer`), italic process-commentary paragraphs (`*Reviewer notes on the working copy:*`, `*Scaffold only — ...*`, etc.), and the three process-tracker sections above. Genuine FAB placeholders (`[DATE]`, `[XXX]`, `[TBD]`, `[BASELINE TBD]`, `[10X]`, `[G-Assist?]`) are preserved.
+
 ## CLI reference (data-plane)
 
 ```bash
@@ -196,7 +207,8 @@ node bin/tumble-dry.cjs brief-editor <slug> <round>
 node bin/tumble-dry.cjs aggregate <slug> <round>
 node bin/tumble-dry.cjs drift <slug> <round> <before> <after>
 node bin/tumble-dry.cjs extract-redraft <slug> <round>
-node bin/tumble-dry.cjs finalize <slug> [--apply] [--apply-to-source]
+node bin/tumble-dry.cjs finalize <slug> [--apply] [--apply-to-source] [--clean]
+node bin/tumble-dry.cjs clean <slug>
 node bin/tumble-dry.cjs register <slug> <finding-summary>
 node bin/tumble-dry.cjs apply-patch <slug>
 node bin/tumble-dry.cjs config
