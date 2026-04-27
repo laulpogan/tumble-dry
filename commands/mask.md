@@ -41,16 +41,16 @@ node "$TD_HOME/bin/mask" $ARGUMENTS
 ## Examples
 
 ```
-/mask casado                                    # REPL
-/mask casado --review ./pitch-deck.pptx         # one-shot file
-/mask willison --review https://my-landing.com/ # one-shot URL
-/mask casado --review ./brief.md --output ./reviews/
+/mask template                                  # REPL with the fictional template persona
+/mask template --review ./pitch-deck.pptx       # one-shot file
+/mask <your-local-slug> --review https://my-landing.com/   # one-shot URL with a local brief
+/mask <your-local-slug> --review ./brief.md --output ./reviews/
 /mask --list
 ```
 
 ## Personas
 
-Real-person briefs live at `personas/real-people/<slug>.md`. Two ship in v1: `casado` (Martin Casado, AI infra), `willison` (Simon Willison, LLM dev tools). Add more by following the schema in `personas/real-people/README.md`.
+Real-people briefs live at `personas/real-people/<slug>.md`. **Briefs of named real persons are local-only by convention** (enforced by `.gitignore`) — see `personas/real-people/README.md` for the privacy posture. The repo ships only `TEMPLATE.md` (slug `template`, fictional). Copy it to `<your-slug>.md` to build a real brief locally.
 
 ## Output
 

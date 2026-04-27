@@ -9,9 +9,27 @@ This is **separate** from `personas/library.md`, which holds anonymous archetype
 `/tumble-dry`'s convergence loop. Real-people briefs are 1:1 dialogue tools. Anonymous
 archetypes are panel members in a polishing pipeline. Don't confuse the two.
 
+## Privacy posture (load-bearing — read this first)
+
+**Real-people briefs must NEVER be committed to a public repo.** A public file with a
+named real person — even with a "synthetic proxy" disclaimer — will surface in google
+results for that name. That's the harm to prevent, and it overrides the polish of having
+named-archetype briefs in the public repo.
+
+Convention enforced by [`.gitignore`](../../.gitignore):
+
+- **Allowed in the repo:** `README.md`, `index.md`, `opt-outs.md`, `TEMPLATE.md`.
+- **Gitignored:** every other `.md` in this directory. Real briefs live here on your
+  local machine but never push.
+- **The bridge:** if you want a real-grounded archetype to ship in the public
+  `personas/library.md` panel library, run `bin/mask anonymize <slug>` (added in PR #3).
+  The anonymizer strips identity fingerprints (real name, firm, citations, named
+  frameworks) and emits a panel entry plus an audit-block listing what was scrubbed.
+
 ## Schema
 
-Each `<slug>.md` file has YAML frontmatter and ten markdown sections:
+Copy [`TEMPLATE.md`](./TEMPLATE.md) and fill in the sections. Each `<slug>.md` file has
+YAML frontmatter and ten markdown sections:
 
 ```markdown
 ---
@@ -76,6 +94,7 @@ The brief format is informed by:
 
 ## Ethics
 
+- **Never commit a real-people brief.** Privacy posture above is non-negotiable.
 - **Never publish** Mask Game outputs as if the real person said them. Internal-only.
 - **Never use in adversarial contexts** (legal, regulatory, competitive harm). Talking
   about a real person's likely critique of *your own* artifact is fine; using it to
@@ -87,14 +106,19 @@ The brief format is informed by:
 - **Respect explicit opt-outs.** If a person publicly says "don't simulate me," set
   `status: retired` and add them to [`opt-outs.md`](./opt-outs.md). Don't run them again.
 
-## Adding a new brief
+## Adding a new brief (local workflow)
 
 1. Read enough of the person's recent (≤12mo) public writing to internalize their voice.
-2. Copy [`martin-casado.md`](./martin-casado.md) as a template.
+2. Copy [`TEMPLATE.md`](./TEMPLATE.md) to a new `<your-slug>.md` (which will be gitignored).
 3. Fill out every section. Resist the urge to leave the blindspot blank — a brief
    without an honest blindspot will quietly produce sycophantic critiques.
-4. Add an entry to [`index.md`](./index.md).
-5. Validate with `bin/mask --list`.
+4. Validate with `bin/mask --list`.
+5. Use locally with `bin/mask <your-slug>` (REPL) or `bin/mask <your-slug> --review <target>`.
+6. **Do not** commit the brief. `.gitignore` should refuse it; if it doesn't, file a bug.
+
+To share a real-grounded archetype publicly, run `bin/mask anonymize <your-slug>` and
+paste the output into `personas/library.md`. The anonymizer strips identity before the
+content reaches a committed file.
 
 When in doubt, err toward fewer briefs of higher quality. A weak brief produces
 plausible-sounding critique that is actually noise.

@@ -7,3 +7,13 @@ node_modules/
 *.log
 .idea/
 .vscode/
+
+# Privacy: real-people briefs (named persons) must NOT be committed to the
+# public repo. Real briefs are local-only by convention — see
+# personas/real-people/README.md.
+# Allowed in the repo: README.md, index.md, opt-outs.md, TEMPLATE.md.
+personas/real-people/*.md
+!personas/real-people/README.md
+!personas/real-people/index.md
+!personas/real-people/opt-outs.md
+!personas/real-people/TEMPLATE.md

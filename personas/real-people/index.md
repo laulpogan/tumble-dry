@@ -1,11 +1,22 @@
 # Mask Game persona catalog
 
-Available real-person briefs for [`/mask`](../../docs/superpowers/specs/2026-04-27-the-mask-game.md).
+The public repo ships **only the schema template** — see [`TEMPLATE.md`](./TEMPLATE.md).
 
-| Slug | Name | Status | Last validated | Domain |
-|---|---|---|---|---|
-| [casado](./martin-casado.md) | Martin Casado | active | 2026-04-27 | AI infra, dev tools, networking, capital-intensity arguments |
-| [willison](./simon-willison.md) | Simon Willison | active | 2026-04-27 | LLM developer tools, inference APIs, local model serving |
+Real-people briefs are **local-only by convention** (enforced by [`.gitignore`](../../.gitignore))
+because a named brief in a public repo would surface in google results for that name.
+Read the **Privacy posture** section of [`README.md`](./README.md) before adding briefs.
 
-See [README.md](./README.md) for schema, ethics, and how to add a brief.
+## What lives here in your local clone
+
+| Slug | Source | Notes |
+|---|---|---|
+| `template` | [`TEMPLATE.md`](./TEMPLATE.md) | Fictional. Schema example. Useful for `bin/mask --list` smoke tests. |
+| *(your local briefs)* | `<your-slug>.md` | Gitignored. Yours alone. Use with `bin/mask <your-slug>`. |
+
+## Bridging real briefs into the public panel library
+
+If you want a real-grounded archetype to ship in `personas/library.md` for `/tumble-dry`,
+run `bin/mask anonymize <your-slug>` (added in PR #3). The anonymizer strips identity
+before any content reaches a committed file.
+
 See [opt-outs.md](./opt-outs.md) for people who have asked not to be simulated.

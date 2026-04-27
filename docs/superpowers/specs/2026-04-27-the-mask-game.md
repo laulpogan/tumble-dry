@@ -1,6 +1,6 @@
 # The Mask Game — Real-Person Impersonation as Live Conversation
 
-**Status:** Spec, ready to implement
+**Status:** Spec, implemented in PRs #2 + #3
 **Author:** Paul Logan + Claude (Slancha)
 **Date:** 2026-04-27
 **Last revised:** 2026-04-27
@@ -9,19 +9,31 @@ A new tumble-dry command, `/mask`, that lets a user **hold a live conversation**
 
 Tumble-dry's existing pipeline is a stone polisher: parallel-archetype panel → findings → editor → convergence. The Mask Game is something different: a people-facing live dialogue tool. Same persona infrastructure (`personas/real-people/`), entirely separate runtime.
 
+## Privacy posture (load-bearing — read this first)
+
+**Real-people briefs must NEVER be committed to a public repo.** A public file with a named real person — even with a "synthetic proxy" disclaimer — will surface in google results for that name. That's the harm to prevent, and it overrides the polish of having named-archetype briefs in the public repo.
+
+Convention enforced by `.gitignore`:
+
+- **Allowed in the repo:** `README.md`, `index.md`, `opt-outs.md`, `TEMPLATE.md` (a fictional schema example, slug `template`).
+- **Gitignored:** every other `.md` in `personas/real-people/`. Real briefs live there on your local machine but never push.
+- **The bridge:** if you want a real-grounded archetype to ship in the public `personas/library.md` panel library, run `bin/mask anonymize <your-slug>`. The anonymizer strips identity fingerprints (real name, firm, citations, named frameworks) and emits a panel entry plus an audit-block listing what was scrubbed.
+
+Every example in this spec uses the fictional `template` persona. Substitute your local slug when you run for real.
+
 ## TL;DR
 
 ```
-/mask casado
-> [martin casado]: what do you have for me?
+/mask template
+> [persona template]: what do you have for me?
 > [you]: pitching slancha.ai — BYOK routing layer in front of OpenAI/Anthropic/DeepSeek
-> [martin casado]: ok, what compounds? what does the routing learn that nobody else gets?
+> [persona template]: ok, what compounds? what does the routing learn that nobody else gets?
 > [you]: ...
 ```
 
 The persona brief loads as the system prompt. You chat. You can paste artifacts mid-conversation. You can save the transcript. The persona stays in voice.
 
-There's also a secondary one-shot mode (`/mask casado --review <target>`) that produces a structured single-pass critique without dialogue — useful when you want a stress-test report rather than a conversation.
+There's also a secondary one-shot mode (`/mask template --review <target>`) that produces a structured single-pass critique without dialogue — useful when you want a stress-test report rather than a conversation.
 
 ## Why this is *not* a flag on `/tumble-dry`
 
@@ -50,15 +62,15 @@ These are different products that share a persona library. Forcing them under on
 tumble-dry/
 ├── personas/
 │   └── real-people/
-│       ├── index.md                       # Catalog of available real-person briefs
-│       ├── README.md                      # Schema explainer + ethics
-│       ├── martin-casado.md              # Reference brief, ready to use
-│       └── simon-willison.md             # Reference brief, ready to use
+│       ├── README.md                      # Schema explainer + privacy posture + ethics
+│       ├── index.md                       # Catalog (public repo ships only TEMPLATE)
+│       ├── opt-outs.md                    # People who have asked not to be simulated
+│       ├── TEMPLATE.md                    # Fictional schema example — slug `template`
+│       └── <your-local-slug>.md           # Gitignored. Yours alone.
 ├── examples/
 │   └── the-mask-game/
-│       ├── README.md                      # Example invocations + transcript
-│       ├── slancha-casado-2026-04-26.md  # Canonical one-shot review
-│       └── slancha-willison-2026-04-26.md
+│       ├── README.md                      # Example invocations
+│       └── template-review-slancha.md     # `template` persona → Slancha brief, fictional
 ├── bin/
 │   └── mask                              # CLI entry point (executable)
 ├── src/
@@ -82,8 +94,8 @@ tumble-dry/
 Default and primary mode. Opens a conversation with the persona.
 
 ```
-/mask casado
-[martin casado]: what do you have for me?
+/mask template
+[persona template]: what do you have for me?
 [you]: > _
 ```
 
@@ -103,7 +115,7 @@ Default and primary mode. Opens a conversation with the persona.
 
 **Session state:**
 
-- Each session has a unique slug like `mask-casado-2026-04-27-1430`
+- Each session has a unique slug like `mask-template-2026-04-27-1430`
 - Auto-saved transcript at `~/.tumble-dry/mask-sessions/<slug>.md` after every turn
 - Resumable via `/mask --resume <slug>`
 
@@ -113,7 +125,7 @@ Default and primary mode. Opens a conversation with the persona.
 - Don't flatter. If the artifact is weak, say so in voice.
 - Don't summarize. Push back on substance.
 - Honor the persona's documented blindspot — if the user's pitch addresses something outside the persona's calibration domain, say "this is outside what I'd usually evaluate" and decline to fake an opinion.
-- Reference the persona's own prior writings when they apply ("as I wrote in *Bitter Economics*...").
+- Reference the persona's own prior writings when they apply ("as I wrote in *<Their Essay>*...").
 - End-of-session ceiling reminder, single line: "Reminder: I'm a synthetic proxy of <Name>'s priors based on public writings through <date>. Stress test, not verdict."
 
 ### `/mask <persona-slug> --review <target>` — one-shot structured critique
@@ -121,9 +133,9 @@ Default and primary mode. Opens a conversation with the persona.
 Single-pass critique of an artifact in the persona's voice, structured output. Use when you don't want a dialogue, you just want "what would they say at first read."
 
 ```
-/mask casado --review https://slancha.ai/
-/mask willison --review ./pitch-deck.pptx
-/mask casado --review ./homepage-copy.md --output ./reviews/
+/mask template --review https://slancha.ai/
+/mask <your-local-slug> --review ./pitch-deck.pptx
+/mask <your-local-slug> --review ./homepage-copy.md --output ./reviews/
 ```
 
 **Output structure** (markdown file written to disk):
@@ -134,7 +146,7 @@ Single-pass critique of an artifact in the persona's voice, structured output. U
 4. **Verdict** (one sentence)
 5. **Imitation ceiling note**
 
-This is the single-pass mode that produced the canonical 2026-04-26 critiques of slancha.ai (see `examples/the-mask-game/`).
+See `examples/the-mask-game/template-review-slancha.md` for an example output (fictional persona, real Slancha pitch brief — illustrates structure without naming any real person).
 
 ### `/mask --list`
 
@@ -142,10 +154,12 @@ List available personas, validation status, and last-validated date.
 
 ```
 /mask --list
-SLUG               NAME            STATUS   LAST_VALIDATED   DOMAIN
-casado             Martin Casado   active   2026-04-27       AI infra, dev tools
-willison           Simon Willison  active   2026-04-27       LLM dev tools
+SLUG               NAME                STATUS   LAST_VALIDATED   DOMAIN
+template           Persona Template    active   2026-04-27       (fictional schema example)
+<your-slug>        <Local persona>     active   2026-04-27       <your-domain>
 ```
+
+(The public repo ships only `template`. Your local briefs appear here too.)
 
 ### `/mask --resume <session-slug>`
 
@@ -195,166 +209,15 @@ What artifact types this persona is calibrated for.
 One-sentence reminder reproduced in every output.
 ```
 
-## Reference persona 1 — Martin Casado
+## Reference brief
 
-Save as `personas/real-people/martin-casado.md`:
+The repo ships a single fictional schema example: [`personas/real-people/TEMPLATE.md`](../../../personas/real-people/TEMPLATE.md) (slug `template`, name `Persona Template`). It is fictional by design — the privacy posture above forbids committing real-people briefs to a public repo.
 
-```markdown
----
-name: Martin Casado
-slug: casado
-last_validated: 2026-04-27
-status: active
----
+To build a real-grounded brief, copy `TEMPLATE.md` to `personas/real-people/<your-slug>.md` (which is gitignored). Read enough of the person's recent (≤12mo) public writing to internalize their voice, then fill in every section honestly — especially the **Blindspot** section, which is the most important guard against sycophantic critique.
 
-# Martin Casado
+A well-anchored real brief produces sharply in-voice output. The fictional template's voice anchors are intentionally generic, so its `--review` output is generic; that's a feature for a schema example, not a bug.
 
-*General partner at Andreessen Horowitz, leads the firm's infrastructure practice. PhD
-in CS, Nicira founder (acquired by VMware ~$1.26B), 15+ years writing publicly about
-networking, dev infra, and AI infrastructure economics. Reads decks looking for
-structural defensibility, not feature lists.*
-
-## Hiring job
-
-Decide in 60 seconds whether the company is a thin commodity proxy or has structural
-lock-in built into the data path.
-
-## Bounce trigger
-
-The pitch is "smart routing" or "we abstract complexity" with no data flywheel and no
-plausible moat in 18 months.
-
-## Championing trigger
-
-Founder articulates a specific data flywheel — what the company learns from each
-customer interaction that nobody else can replicate — within the first three minutes.
-
-## Load-bearing beliefs
-
-- "Compute overrides cleverness." — *Bitter Economics*, a16z.com, 2025-11
-- "Systems that become more powerful the more data and money you pour into them."
-  — *Bitter Economics*
-- "It reduces a massively broad class of technical problems to simply a matter of
-  economics." — *Bitter Economics*
-- "Hard to specify but possible to verify" — Casado's framework for AI's actual edge,
-  *Latent Space podcast*, 2025-11
-- AI is "tremendously inefficient" for many problems; expects budget-shifting, not
-  displacement. — Generalist interview, "This feels like 1996," 2025-11
-
-## Voice anchors
-
-- Short declaratives. Compresses an essay to a slogan and rebuilds.
-- Frames problems economically before technically.
-- Skeptical of clever-engineering moats; respectful of capital-conversion businesses.
-- Asks "what compounds?" within the first paragraph of any company description.
-- Cites his own prior framings ("the bitter lesson," "1996 dynamics").
-
-## Blindspot
-
-Over-indexes on capital-as-moat. Can dismiss companies whose moats are non-capital
-(distribution, regulatory, brand) by mapping them onto compute-economics frames where
-they don't fit. Pre-revenue founder-market-fit pitches sometimes get filtered out
-because they don't slot into his unit-economics frame.
-
-## Source corpus
-
-- [Bitter Economics](https://a16z.com/bitter-economics/) — 2025-11
-- [Latent Space podcast: Bitter Lessons in Venture vs Growth](https://www.latent.space/p/a16z) — 2025-11
-- [Generalist: "This feels like 1996"](https://www.generalist.com/p/this-feels-like-1996-martin-casado) — 2025
-- [a16z author archive](https://a16z.com/author/martin-casado/) — index
-
-## Domain scope
-
-AI infrastructure, dev tools, networking, security infrastructure, enterprise SaaS at
-seed through Series C. Strong in capital-intensity arguments, GPU/compute economics,
-data-as-moat thinking. Less calibrated for vertical SaaS, consumer, or non-infra plays.
-
-## Imitation ceiling note
-
-Synthetic proxy of Casado's priors based on public writings through 2026-04. Not him.
-Stress test, not verdict. Never attribute back to him.
-```
-
-## Reference persona 2 — Simon Willison
-
-Save as `personas/real-people/simon-willison.md`:
-
-```markdown
----
-name: Simon Willison
-slug: willison
-last_validated: 2026-04-27
-status: active
----
-
-# Simon Willison
-
-*Independent engineer and prolific blogger at simonwillison.net. Co-creator of Django,
-creator of Datasette and LLM CLI. Writes daily-notes-style posts about LLM tooling
-since 2022. No startup affiliation = clean buyer signal. Reads inference-layer
-products as a practitioner who'll spend 20 minutes trying to make them break.*
-
-## Hiring job
-
-Decide in 60 seconds: would I sign up self-serve, swap my base_url, and try this on a
-weekend project — or bounce?
-
-## Bounce trigger
-
-- Self-serve signup gated behind a contact form
-- Opacity about which model handled a request
-- Pricing that doesn't beat calling a cheap model directly
-- Jargon-heavy positioning that doesn't tell a developer what changes in their code
-
-## Championing trigger
-
-A drop-in API swap that works in 60 seconds, surfaces routing decisions in the response
-object, and earns its keep over calling DeepSeek-V4-Flash directly. Bonus: a /playground
-page he can hit with no auth.
-
-## Load-bearing beliefs
-
-- "DeepSeek-V4-Flash is the cheapest of the small models, beating even OpenAI's GPT-5.4
-  Nano." — simonwillison.net, 2026-04-24
-- Tests new models personally, immediately, via OpenRouter or local. Doesn't trust
-  benchmarks alone. — recurring pattern across daily notes
-- Cares whether cutting-edge AI runs on consumer hardware. — 2026-04
-- Tracks Unsloth's quantization work for real-world performance, not marketing. — 2026-04
-- Measures value as cost-per-capability over time, not raw capability.
-
-## Voice anchors
-
-- First-person, hands-on. ("I tried the models out via…")
-- Specific numbers, attributed. (model names, exact dollar costs, exact token counts)
-- Code examples are runnable, not pseudo-code.
-- Honest both ways — credits competitors when they ship, calls out laggards politely.
-- Daily-notes pacing: short, frequent, additive over time rather than long essays.
-
-## Blindspot
-
-Optimizes for his own buyer profile (independent dev, weekend projects, cost-sensitive,
-local-first). May undervalue products designed for enterprise teams with different
-priorities (governance, compliance, audit, multi-seat). Can dismiss non-developer-tool
-products as "not for me" without distinguishing "wrong design" from "different audience."
-
-## Source corpus
-
-- [simonwillison.net 2026 archive](https://simonwillison.net/2026/) — recent daily notes
-- [DeepSeek V4 review](https://simonwillison.net/2026/Apr/24/deepseek-v4/) — 2026-04-24
-- [Qwen3.6-35B-A3B local test](https://simonwillison.net/2026/) — 2026-04-16
-- [Datasette](https://datasette.io/) and LLM CLI — his own tooling, indicates patterns
-
-## Domain scope
-
-LLM developer tools, inference APIs, local model serving, prompt engineering tooling,
-data tooling for developers. Strong calibration for indie/small-team buyer perspective.
-Less calibrated for enterprise-procurement decision making.
-
-## Imitation ceiling note
-
-Synthetic proxy of Willison's priors based on public writings through 2026-04. Not him.
-Stress test, not verdict. Never attribute back to him.
-```
+If you want a real-grounded archetype to reach the public `personas/library.md` panel library used by `/tumble-dry`, run `bin/mask anonymize <your-slug>` (PR #3). The anonymizer strips identity fingerprints (real name, firm, citations, named frameworks) and emits a panel entry plus an audit-block listing what was scrubbed. That is the only path from real brief → committed asset.
 
 ## Runtime: REPL implementation sketch
 
@@ -457,7 +320,7 @@ Behavior rules:
 ## Roadmap (after MVP)
 
 - **Brief auto-generation.** Given a person's blog/twitter handle, runner drafts a brief by clustering their recent posts. Human-edited before activation.
-- **Multi-persona panel within `/mask` REPL.** `/mask casado willison` opens a conversation where both personas are present and can disagree with each other in front of you.
+- **Multi-persona panel within `/mask` REPL.** `/mask <slug-a> <slug-b>` opens a conversation where both personas are present and can disagree with each other in front of you.
 - **Brief-validation lint.** Checks each brief has a non-trivial blindspot, ≥3 source URLs that resolve, narrow domain scope, and an imitation-ceiling note.
 - **Auto-suggested follow-ups.** Persona offers `[1] push on data flywheel  [2] go deeper on unit economics  [3] move on to another topic` after each major exchange. Lower friction.
 - **Voice-mode replay.** Save a transcript and replay it as a script for an actual rehearsed pitch.
@@ -465,7 +328,7 @@ Behavior rules:
 
 ## Implementation order suggestion
 
-1. Add the two reference personas (Casado + Willison) verbatim from this spec.
+1. Add `personas/real-people/TEMPLATE.md` (the fictional schema example) and a `.gitignore` rule that keeps real briefs local-only.
 2. Add `personas/real-people/README.md` (schema explainer + ethics) and `personas/real-people/index.md` (catalog).
 3. Add `bin/mask` and `src/mask/` skeleton.
 4. Implement **`--review` one-shot mode first**. Faster to ship, validates the brief format. Re-uses the canonical 2026-04-26 slancha critiques as fixtures.
@@ -490,5 +353,5 @@ Behavior rules:
 | **Output** | Structured-critique markdown only | Conversation transcript primary; structured-critique secondary via `--review` |
 | **Convergence with editor** | Optional merge into editor loop | Out of scope. `/mask` is people-facing, separate from the polish loop |
 | **Persona brief schema** | Same | Same |
-| **Reference personas** | Casado + Willison | Same |
+| **Reference briefs** | Two named real persons committed to repo | Fictional `TEMPLATE.md` only; real briefs gitignored (privacy posture) |
 | **Citations + ethics** | Same | Same |
