@@ -29,6 +29,7 @@ function parseArgs(argv) {
     if (a === '--output') { args.flags.output = argv[++i]; continue; }
     if (a === '--model') { args.flags.model = argv[++i]; continue; }
     if (a === '--resume') { args.flags.resume = argv[++i]; continue; }
+    if (a === '--panel') { args.flags.panel = argv[++i]; continue; }
     if (a.startsWith('--')) {
       args.flags[a.slice(2)] = (argv[i + 1] && !argv[i + 1].startsWith('--')) ? argv[++i] : true;
       continue;
@@ -45,6 +46,11 @@ Usage:
   mask <slug>                            interactive REPL with persona <slug>
   mask <slug> --review <target>          one-shot structured critique
                  [--output <path>]       file or directory (default: ~/.tumble-dry/mask-reviews/)
+                 [--model <id>]          default: claude-opus-4-7[1m]
+                 [--dry-run]             render prompt + sizes, don't call the model
+  mask anonymize <slug>                  emit a library.md panel entry with identity stripped
+                 [--panel <name>]        target panel section hint (e.g. "Seed pitch deck")
+                 [--output <path>]       write to file instead of stdout
                  [--model <id>]          default: claude-opus-4-7[1m]
                  [--dry-run]             render prompt + sizes, don't call the model
   mask --list                            list available personas
@@ -75,6 +81,35 @@ async function main(argv) {
   if (args.flags.resume) {
     process.stderr.write('mask: --resume not yet implemented (REPL pass 2). See spec.\n');
     return 2;
+  }
+
+  // Subcommand: anonymize
+  if (args.positional[0] === 'anonymize') {
+    const slug = args.positional[1];
+    if (!slug) { process.stderr.write('mask: usage: mask anonymize <slug> [--panel <name>] [--output <path>]\n'); return 1; }
+    const { anonymize, renderForFile } = require('./anonymize.cjs');
+    try {
+      const result = await anonymize({
+        slug,
+        panel: args.flags.panel,
+        model: args.flags.model,
+        dryRun: args.flags.dryRun,
+      });
+      if (args.flags.dryRun) { process.stdout.write(JSON.stringify(result, null, 2) + '\n'); return 0; }
+      const { loadBrief } = require('./brief-loader.cjs');
+      const brief = loadBrief(slug);
+      const body = renderForFile(brief, result.output);
+      if (args.flags.output) {
+        fs.writeFileSync(args.flags.output, body, 'utf-8');
+        process.stderr.write(`[mask] anonymized entry → ${args.flags.output}\n`);
+      } else {
+        process.stdout.write(body);
+      }
+      return 0;
+    } catch (err) {
+      process.stderr.write(`mask: ${err.message}\n`);
+      return 1;
+    }
   }
 
   const slug = args.positional[0];
