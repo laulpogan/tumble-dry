@@ -6,6 +6,8 @@ Works across four artifact families: **prose** (blog posts, essays, memos, ad co
 
 > **v0.10.0 (2026-04-16):** Convergence + UX polish. Structural finding register stops oscillation. Drift hard gate per type. Batch dashboard. Component integration patches. Git integration (v0.9.1). See [CHANGELOG.md](CHANGELOG.md).
 
+> **New: `/mask` (in-progress, draft PR).** A separate command for live conversation with a real, named, public person about an artifact you're about to ship. One-shot critique mode (`bin/mask <slug> --review <target>`) is working today; interactive REPL is a second pass. See [the spec](docs/superpowers/specs/2026-04-27-the-mask-game.md) and [examples](examples/the-mask-game/).
+
 ## Install
 
 ```bash
