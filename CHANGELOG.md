@@ -11,6 +11,7 @@ Spec: `docs/superpowers/specs/2026-04-27-the-mask-game.md`. Draft PR: [#2](https
 ### Added
 
 - **`commands/mask.md`** — slash command. Thin shim over `bin/mask`.
+- **`bin/mask anonymize <slug>` subcommand** (`src/mask/anonymize.cjs`) — converts a real-people brief into a `personas/library.md`-shaped panel entry with identity fingerprints stripped (real name, firm, specific company exits, cited essays, named frameworks the person owns). Preserves behavioral patterns, domain calibration, and the honest blindspot. Emits an "Anonymization notes" block listing every fingerprint scrubbed so the maintainer can audit. `--panel <name>` hints which library section the entry targets. This is the bridge that lets a hand-curated real-people brief seed `/tumble-dry`'s anonymous panel library without re-doing the research.
 - **`bin/mask` + `src/mask/`** — CLI:
   - `brief-loader.cjs` — loads `personas/real-people/<slug>.md`, indexes by frontmatter slug (not filename), enforces required sections, refuses `status: retired`, warns when `last_validated` > 180 days old.
   - `prompt-builder.cjs` — assembles the persona system prompt + `--review` structured-output user prompt. Bakes in imitation-ceiling reminder and blindspot-honoring rule.

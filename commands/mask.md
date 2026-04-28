@@ -1,6 +1,6 @@
 ---
 description: Talk to a real person about something you're about to ship — anchored on their public writings. Separate from /tumble-dry: this is a 1:1 dialogue tool, not a polishing pipeline.
-argument-hint: <persona-slug> [--review <target>] [--output <path>] [--model <id>] [--dry-run] | --list | --resume <session-slug>
+argument-hint: <persona-slug> [--review <target>] | anonymize <slug> [--panel <name>] [--output <path>] | --list | --resume <session-slug> | --dry-run | --model <id>
 ---
 
 # /mask
@@ -35,6 +35,7 @@ node "$TD_HOME/bin/mask" $ARGUMENTS
 
 - **REPL (default):** `/mask <slug>` — opens an interactive conversation with the persona. Supports `:paste <path>`, `:read <url>`, `:context`, `:save [path]`, `:exit`. (`:switch`, `:challenge`, `:reset`, `--resume` deferred to a follow-up.)
 - **One-shot critique:** `/mask <slug> --review <target>` — single-pass structured critique. `<target>` can be a file path, directory, or URL.
+- **Anonymize for `/tumble-dry` library:** `/mask anonymize <slug> [--panel <name>]` — converts a real-people brief into a `personas/library.md`-shaped panel entry with identity stripped. Emits the entry plus an "Anonymization notes" block listing every fingerprint scrubbed, so the maintainer can audit before pasting.
 - **List personas:** `/mask --list`
 - **Dry-run:** `/mask <slug> --review <target> --dry-run` — prints prompt sizes, doesn't call the model.
 
@@ -45,6 +46,7 @@ node "$TD_HOME/bin/mask" $ARGUMENTS
 /mask template --review ./pitch-deck.pptx       # one-shot file
 /mask <your-local-slug> --review https://my-landing.com/   # one-shot URL with a local brief
 /mask <your-local-slug> --review ./brief.md --output ./reviews/
+/mask anonymize <your-local-slug> --panel "Series A pitch deck"  # strip identity → library entry
 /mask --list
 ```
 
