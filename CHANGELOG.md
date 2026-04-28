@@ -2,6 +2,39 @@
 
 All notable changes to tumble-dry. Format inspired by [Keep a Changelog](https://keepachangelog.com/); versioning roughly semver (minor bumps for new capability, patch bumps for bug-fix / hardening waves).
 
+## [Unreleased] — `/mask` (the Mask Game)
+
+**Theme:** A separate command for live conversation with one named, public person about an artifact you're about to ship — anchored on their public writings. Intentionally separate from `/tumble-dry`'s polish loop: mask is people-facing dialogue, tumble-dry is batch convergence. They share a persona library and otherwise diverge.
+
+Spec: `docs/superpowers/specs/2026-04-27-the-mask-game.md`. Draft PR: [#2](https://github.com/laulpogan/tumble-dry/pull/2).
+
+### Added
+
+- **`commands/mask.md`** — slash command. Thin shim over `bin/mask`.
+- **`bin/mask` + `src/mask/`** — CLI:
+  - `brief-loader.cjs` — loads `personas/real-people/<slug>.md`, indexes by frontmatter slug (not filename), enforces required sections, refuses `status: retired`, warns when `last_validated` > 180 days old.
+  - `prompt-builder.cjs` — assembles the persona system prompt + `--review` structured-output user prompt. Bakes in imitation-ceiling reminder and blindspot-honoring rule.
+  - `target-loader.cjs` — resolves URL / file / directory targets to markdown. Reuses `lib/loader.cjs` for office formats. Lightweight HTML→text fallback for live URL fetches.
+  - `llm.cjs` — spawns `claude --print --system-prompt --no-session-persistence --disable-slash-commands --model claude-opus-4-7[1m]` as a subprocess. Strips `ANTHROPIC_API_KEY` from child env so OAuth wins. Zero API-key setup.
+  - `one-shot.cjs` — `--review` mode: single-pass structured critique to `~/.tumble-dry/mask-reviews/<slug>-<target>-<date>.md`.
+  - `repl.cjs` — interactive conversation. Implements `:paste`, `:read`, `:context`, `:save`, `:exit`, `:help`. Auto-saves transcript to `~/.tumble-dry/mask-sessions/` after every turn.
+  - `transcript.cjs` — append-only conversation log writer.
+  - `cli.cjs` — argument parser + dispatch.
+- **`personas/real-people/`** — schema + ethics README (with a load-bearing privacy posture), opt-outs ledger, catalog index, and `TEMPLATE.md` — a fictional persona that documents the schema. **Real-people briefs are local-only by convention** (enforced by `.gitignore`): a public file with a real named person would surface in google results for that name, even with a "synthetic proxy" disclaimer. Bridge real briefs into the public panel library via `bin/mask anonymize` (PR #3).
+- **`examples/the-mask-game/`** — one `--review` output produced by the actual pipeline against the Slancha pitch brief, using the fictional `template` persona. Demonstrates structure without naming real people.
+- README callout linking to spec and examples.
+
+### Deferred to a follow-up PR (per spec, ordered by spec's "implementation order")
+
+- REPL primitives `:switch`, `:challenge`, `:reset`, and `--resume`.
+- Brief auto-generation (given a blog/twitter handle, draft a brief).
+- Multi-persona panel within REPL.
+- Brief-validation lint command.
+
+### Out of scope for v1 (per spec)
+
+- Voice mode, cross-session memory, autonomous web fetches by the persona, persona library UI.
+
 ## [0.10.0] — 2026-04-16 — Convergence + UX polish
 
 **Theme:** Structural finding register stops convergence oscillation. Drift hard gate per artifact type splits redrafts when editor rewrites too aggressively. Batch dashboard shows at-a-glance progress. Component integration produces patches for applying polished copy back to source files.
